@@ -1,0 +1,22 @@
+/* Custom styles to override main.css */
+a {
+    border-bottom: solid 1px rgba(255, 255, 255, 0.5);
+}
+
+.montserrat-small {
+    width: auto !important;
+    max-width: 300px !important;
+    margin: 1rem auto !important;
+}
+
+.graduacio {
+    width: auto !important;
+    max-width: 400px !important;
+    margin: 1rem auto !important;
+}
+
+.montserrat-small img, .graduacio img {
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
