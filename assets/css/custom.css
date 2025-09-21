@@ -15,7 +15,13 @@ a {
     margin: 1rem auto !important;
 }
 
-.montserrat-small img, .graduacio img {
+.thesis-defense {
+    width: auto !important;
+    max-width: 400px !important;
+    margin: 1rem auto !important;
+}
+
+.montserrat-small img, .graduacio img, .thesis-defense img {
     width: auto !important;
     max-width: 100% !important;
     height: auto !important;
