@@ -26,3 +26,24 @@ a {
     max-width: 100% !important;
     height: auto !important;
 }
+
+/* Custom style for CV section to make it wider */
+#cv {
+    width: 60rem !important;
+    max-width: 90vw !important;
+}
+
+/* CV container to ensure PDF displays properly */
+.cv-container {
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.cv-container iframe {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    display: block;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
