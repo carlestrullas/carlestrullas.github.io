@@ -21,7 +21,7 @@ a {
     margin: 1rem auto !important;
 }
 
-.montserrat-small img, .graduacio img, .thesis-defense img {
+.thesis-defense img, .montserrat-small img, .graduacio img {
     width: auto !important;
     max-width: 100% !important;
     height: auto !important;
