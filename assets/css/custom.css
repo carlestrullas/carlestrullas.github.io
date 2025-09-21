@@ -52,7 +52,7 @@ a {
 
 .cv-page {
     width: 100%;
-    max-width: 800px;
+    max-width: 100%;
     height: auto;
     display: block;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
@@ -61,7 +61,7 @@ a {
 
 /* CV buttons section */
 .cv-buttons {
-    margin: 2rem 0;
+    margin: 0 0 2rem 0;
     text-align: center;
 }
 
