@@ -47,8 +47,14 @@ a {
     margin: 0 auto;
     display: block;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    -webkit-overflow-scrolling: touch;
-    overflow: auto;
+}
+
+/* Desktop specific PDF adjustments */
+@media screen and (min-width: 737px) {
+    .cv-container iframe, .pdf-frame {
+        height: 800px;
+        border: none;
+    }
 }
 
 /* Mobile specific PDF adjustments */
@@ -66,11 +72,9 @@ a {
     }
     
     .pdf-frame {
-        width: 1px;
-        min-width: 100%;
-        height: 700px;
-        transform: scale(0.9);
-        transform-origin: center top;
-        margin: 0 auto;
+        height: 600px;
+        transform: scale(0.95);
+        transform-origin: top center;
+        -webkit-overflow-scrolling: touch;
     }
 }
