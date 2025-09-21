@@ -38,15 +38,6 @@ a {
     width: 100%;
     margin: 0 auto;
     text-align: center;
-    overflow: hidden;
-}
-
-.cv-container iframe, .pdf-frame {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    display: block;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 /* Elementos específicos para mostrar/ocultar según dispositivo */
@@ -58,15 +49,31 @@ a {
     display: none;
 }
 
-/* Desktop specific PDF adjustments */
-@media screen and (min-width: 737px) {
-    .cv-container iframe, .pdf-frame {
-        height: 800px;
-        border: none;
-    }
+/* PDF iframe for desktop */
+.pdf-frame {
+    width: 100%;
+    height: 800px;
+    border: none;
+    margin: 0 auto;
+    display: block;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Mobile specific PDF adjustments */
+/* CV preview image for mobile */
+.cv-preview-image {
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.cv-image-link {
+    display: block;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* Mobile specific adjustments */
 @media screen and (max-width: 736px) {
     #cv {
         width: 100% !important;
@@ -74,32 +81,11 @@ a {
         padding: 3.5rem 1rem 0.5rem 1rem !important;
     }
     
-    .cv-container {
-        width: 100%;
-        overflow: hidden;
-    }
-    
-    /* Ocultar y mostrar diferentes elementos en móvil */
     .desktop-only {
-        display: none;
+        display: none !important;
     }
     
     .mobile-only {
-        display: block;
-    }
-    
-    /* Estilos para el objeto PDF en móvil */
-    .pdf-object {
-        width: 100%;
-        height: 500px;
-        border: none;
-    }
-    
-    /* Estilo para el mensaje de fallback */
-    .fallback {
-        padding: 20px;
-        text-align: center;
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 4px;
+        display: block !important;
     }
 }
