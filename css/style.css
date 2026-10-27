@@ -132,8 +132,8 @@ cite { font-style: italic; }
 }
 #net {
   position: absolute; inset: 0; z-index: -1; display: block;
-  -webkit-mask-image: linear-gradient(to right, transparent var(--net-fade, 40%), #000 calc(var(--net-fade, 40%) + 180px));
-          mask-image: linear-gradient(to right, transparent var(--net-fade, 40%), #000 calc(var(--net-fade, 40%) + 180px));
+  -webkit-mask-image: linear-gradient(to right, transparent var(--net-fade, 40%), #000 calc(var(--net-fade, 40%) + 110px));
+          mask-image: linear-gradient(to right, transparent var(--net-fade, 40%), #000 calc(var(--net-fade, 40%) + 110px));
 }
 .hero > .wrap { width: 100%; }
 .hero-grid { display: block; }

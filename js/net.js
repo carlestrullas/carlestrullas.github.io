@@ -21,15 +21,26 @@
     accent = cs.getPropertyValue('--field-accent').trim() || accent;
   }
 
+  function measureTextRight() {
+    const text = hero.querySelector('.hero-text');
+    if (!text) return W * 0.4;
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    let right = 0;
+    for (const r of range.getClientRects()) right = Math.max(right, r.right);
+    for (const el of text.querySelectorAll('.btn, .icon-link')) right = Math.max(right, el.getBoundingClientRect().right);
+    return right - hero.getBoundingClientRect().left;
+  }
+
   function build() {
     const narrow = W < 760;
     const sizes = narrow ? [3, 5, 5, 4, 2] : [4, 7, 9, 9, 6, 3];
     // Desktop: start the network a clear gap after the text block, wherever it ends
-    const text = hero.querySelector('.hero-text');
-    const textRight = text ? text.getBoundingClientRect().right - hero.getBoundingClientRect().left : W * 0.4;
-    const x0 = narrow ? W * 0.08 : Math.min(W * 0.62, Math.max(W * 0.40, textRight + 110));
+    // (measured from the rendered lines, not the text container, which is wider)
+    const textRight = measureTextRight();
+    const x0 = narrow ? W * 0.08 : Math.min(W * 0.62, Math.max(W * 0.36, textRight + 70));
     const x1 = narrow ? W * 0.92 : W * 0.95;
-    if (!narrow) canvas.style.setProperty('--net-fade', Math.round(textRight + 10) + 'px');
+    if (!narrow) canvas.style.setProperty('--net-fade', Math.round(textRight - 20) + 'px');
     const y0 = narrow ? H - 270 : H * 0.10;
     const y1 = narrow ? H - 30 : H * 0.90;
 
@@ -205,6 +216,8 @@
   readColors();
   resize();
   new ResizeObserver(resize).observe(hero);
+  // Web fonts change the text width; re-place the network once they load
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
   new IntersectionObserver((entries) => {
     visible = entries[0].isIntersecting;
     visible ? start() : stop();
