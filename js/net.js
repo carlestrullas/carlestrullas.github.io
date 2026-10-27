@@ -23,8 +23,7 @@
 
   function build() {
     const narrow = W < 760;
-    const sizes = narrow ? [3, 5, 6, 4, 2] : [5, 8, 10, 10, 7, 3];
-    // Desktop: network sits mostly to the right of the text; phone: full width, lower half.
+    const sizes = narrow ? [3, 5, 5, 4, 2] : [4, 7, 9, 9, 6, 3];
     // Desktop: start the network a clear gap after the text block, wherever it ends
     const text = hero.querySelector('.hero-text');
     const textRight = text ? text.getBoundingClientRect().right - hero.getBoundingClientRect().left : W * 0.4;
@@ -52,12 +51,11 @@
       }
       layers.push(layer);
     });
+    // Dense (fully connected) layers: every neuron links to every neuron in the next layer
     for (let li = 0; li < layers.length - 1; li++) {
       for (const a of layers[li]) for (const b of layers[li + 1]) {
-        if (Math.random() < (narrow ? 0.7 : 0.48)) {
-          const e = { a, b, w: Math.random() * 2 - 1, glow: 0 };
-          edges.push(e); a.out.push(e);
-        }
+        const e = { a, b, w: Math.random() * 2 - 1, glow: 0 };
+        edges.push(e); a.out.push(e);
       }
     }
     pulses = [];
@@ -81,7 +79,7 @@
     node.refractory = 0.35;
     for (const e of node.out) {
       // Stronger weights carry the signal more often
-      if (Math.random() < 0.25 + 0.6 * Math.abs(e.w) * strength) {
+      if (Math.random() < 0.08 + 0.32 * Math.abs(e.w) * strength) {
         pulses.push({ e, p: 0, speed: 0.9 + Math.random() * 0.6, pos: e.w > 0 });
       }
     }
@@ -142,7 +140,7 @@
     // Edges: faint base, brighter while a signal travels along them
     ctx.lineWidth = 1;
     for (const e of edges) {
-      const base = 0.05 + 0.10 * Math.abs(e.w);
+      const base = 0.035 + 0.075 * Math.abs(e.w);
       const a = base + e.glow * 0.35;
       ctx.strokeStyle = e.glow > 0.02 && e.w > 0 ? `rgba(${accent},${a})` : `rgba(${ink},${a})`;
       ctx.beginPath(); ctx.moveTo(e.a.x, e.a.y); ctx.lineTo(e.b.x, e.b.y); ctx.stroke();
