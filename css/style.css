@@ -9,7 +9,7 @@
   --accent: #2B45C9;
   --accent-ink: #FFFFFF;
   --accent-soft: #E3E7F8;
-  --field-ink: 19, 32, 48;      /* rgb for canvas trails */
+  --field-ink: 19, 32, 48;      /* rgb for the hero network */
   --field-accent: 43, 69, 201;
 
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -120,8 +120,24 @@ cite { font-style: italic; }
 }
 
 /* ---------- Hero ---------- */
-.hero { padding: clamp(40px, 8vw, 96px) 0 clamp(48px, 7vw, 88px); border-bottom: 1px solid var(--rule); }
-.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+.hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  min-height: clamp(560px, 80vh, 780px);
+  display: flex; align-items: center;
+  padding: clamp(48px, 8vw, 96px) 0;
+  border-bottom: 1px solid var(--rule);
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--rule) 70%, transparent) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    var(--bg);
+}
+#net {
+  position: absolute; inset: 0; z-index: -1; display: block;
+  -webkit-mask-image: linear-gradient(to right, transparent 22%, #000 52%);
+          mask-image: linear-gradient(to right, transparent 22%, #000 52%);
+}
+.hero > .wrap { width: 100%; }
+.hero-grid { display: block; }
+.hero-text { max-width: 560px; }
 .hero h1 { font-size: var(--step-5); font-weight: 700; letter-spacing: -0.02em; line-height: 1.02; }
 .role { font-family: var(--serif); font-size: var(--step-2); color: var(--accent); margin: .5em 0 1.1em; font-weight: 400; }
 .lede { font-size: var(--step-1); color: var(--ink); max-width: 34ch; line-height: 1.5; }
@@ -140,18 +156,6 @@ cite { font-style: italic; }
 .icon-link:hover { color: var(--ink); background: var(--accent-soft); }
 .icon-link svg { width: 22px; height: 22px; fill: currentColor; }
 
-.field-figure { margin: 0; }
-#field {
-  display: block; width: 100%; aspect-ratio: 1 / 1;
-  border: 1px solid var(--rule); border-radius: 10px;
-  background:
-    linear-gradient(color-mix(in srgb, var(--rule) 55%, transparent) 1px, transparent 1px) 0 0 / 10% 10%,
-    linear-gradient(90deg, color-mix(in srgb, var(--rule) 55%, transparent) 1px, transparent 1px) 0 0 / 10% 10%,
-    var(--surface);
-  background-blend-mode: normal;
-}
-.field-figure figcaption { margin-top: 12px; font-size: var(--step--1); color: var(--muted); line-height: 1.5; max-width: 60ch; }
-.eq { font-family: var(--serif); color: var(--ink); white-space: nowrap; font-size: 1.05em; }
 
 /* ---------- Sections ---------- */
 .section { padding: clamp(56px, 8vw, 104px) 0; border-bottom: 1px solid var(--rule); }
@@ -247,13 +251,13 @@ cite { font-style: italic; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
-  .hero-grid { grid-template-columns: minmax(0, 1fr); }
-  .field-figure { max-width: 560px; }
   .section-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .section-title { position: static; }
   .about { grid-template-columns: 180px minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
+  .hero { align-items: flex-start; min-height: 0; padding-bottom: 300px; }
+  #net { -webkit-mask-image: linear-gradient(to bottom, transparent calc(100% - 330px), #000 calc(100% - 250px)); mask-image: linear-gradient(to bottom, transparent calc(100% - 330px), #000 calc(100% - 250px)); }
   .nav-list { display: none; }
   .about { grid-template-columns: minmax(0, 1fr); }
   .portrait { max-width: 220px; }

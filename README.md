@@ -7,7 +7,7 @@ Plain HTML, CSS and JavaScript with no build step. GitHub Pages deploys the repo
 ```
 index.html          single-page site
 css/style.css       design tokens, layout, light and dark themes
-js/field.js         animated phase portrait in the hero (canvas)
+js/net.js           interactive neural network behind the hero (canvas)
 js/main.js          theme toggle, header state, active nav link
 images/             portrait (WebP + JPEG) and the social preview image
 assets/pdf/         CV

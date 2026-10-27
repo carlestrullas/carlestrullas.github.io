@@ -68,6 +68,7 @@
   <main id="main">
     <!-- Hero -->
     <section class="hero" id="top">
+      <canvas id="net" aria-hidden="true"></canvas>
       <div class="wrap hero-grid">
         <div class="hero-text">
           <h1>Carles Trullàs</h1>
@@ -85,15 +86,6 @@
             </a>
           </div>
         </div>
-
-        <figure class="field-figure">
-          <canvas id="field" aria-hidden="true"></canvas>
-          <figcaption>
-            Phase portrait of the quadratic system
-            <span class="eq"><i>ẋ</i> = <i>x</i>² + <i>y</i>, &nbsp;<i>ẏ</i> = −<i>x</i> − <i>y</i></span>,
-            with a stable focus and a saddle. Quadratic systems were the subject of my master's thesis.
-          </figcaption>
-        </figure>
       </div>
     </section>
 
@@ -374,7 +366,7 @@
     </div>
   </footer>
 
-  <script src="js/field.js" defer></script>
+  <script src="js/net.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>
