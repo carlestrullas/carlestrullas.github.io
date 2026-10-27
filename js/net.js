@@ -24,10 +24,15 @@
   function measureTextRight() {
     const text = hero.querySelector('.hero-text');
     if (!text) return W * 0.4;
-    const range = document.createRange();
-    range.selectNodeContents(text);
+    // Measure each text node's line boxes only; element boxes span the full container
     let right = 0;
-    for (const r of range.getClientRects()) right = Math.max(right, r.right);
+    const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    while (walker.nextNode()) {
+      if (!walker.currentNode.textContent.trim()) continue;
+      range.selectNodeContents(walker.currentNode);
+      for (const r of range.getClientRects()) right = Math.max(right, r.right);
+    }
     for (const el of text.querySelectorAll('.btn, .icon-link')) right = Math.max(right, el.getBoundingClientRect().right);
     return right - hero.getBoundingClientRect().left;
   }
