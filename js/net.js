@@ -25,8 +25,12 @@
     const narrow = W < 760;
     const sizes = narrow ? [3, 5, 6, 4, 2] : [5, 8, 10, 10, 7, 3];
     // Desktop: network sits mostly to the right of the text; phone: full width, lower half.
-    const x0 = narrow ? W * 0.08 : W * 0.40;
+    // Desktop: start the network a clear gap after the text block, wherever it ends
+    const text = hero.querySelector('.hero-text');
+    const textRight = text ? text.getBoundingClientRect().right - hero.getBoundingClientRect().left : W * 0.4;
+    const x0 = narrow ? W * 0.08 : Math.min(W * 0.62, Math.max(W * 0.40, textRight + 110));
     const x1 = narrow ? W * 0.92 : W * 0.95;
+    if (!narrow) canvas.style.setProperty('--net-fade', Math.round(textRight + 10) + 'px');
     const y0 = narrow ? H - 270 : H * 0.10;
     const y1 = narrow ? H - 30 : H * 0.90;
 
