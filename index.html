@@ -16,8 +16,7 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <meta name="theme-color" content="#F4F5F2" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#111A24" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#111A24">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,8 +24,10 @@
   <link rel="stylesheet" href="css/style.css">
 
   <script>
-    // Apply saved theme before paint to avoid a flash.
-    try { var t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    // Dark by default; a saved choice from the toggle wins. Runs before paint to avoid a flash.
+    var t = 'dark';
+    try { t = localStorage.getItem('theme') || 'dark'; } catch (e) {}
+    document.documentElement.dataset.theme = t;
   </script>
 
   <script type="application/ld+json">
