@@ -22,6 +22,22 @@
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
 
+  // Mobile menu
+  const toggle = document.querySelector('.nav-toggle');
+  const setMenu = (open) => {
+    if (!toggle) return;
+    header.classList.toggle('nav-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  };
+  if (toggle) {
+    toggle.addEventListener('click', () => setMenu(!header.classList.contains('nav-open')));
+    document.querySelectorAll('.nav-list a').forEach(a => a.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+    document.addEventListener('click', (e) => { if (!header.contains(e.target)) setMenu(false); });
+    window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => { if (e.matches) setMenu(false); });
+  }
+
   // Highlight the nav link for the section in view
   const links = new Map([...document.querySelectorAll('.nav-list a')].map(a => [a.getAttribute('href').slice(1), a]));
   const io = new IntersectionObserver((entries) => {

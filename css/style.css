@@ -105,6 +105,21 @@ cite { font-style: italic; }
 }
 .nav-list a:hover { color: var(--ink); background: var(--accent-soft); }
 .nav-list a[aria-current="true"] { color: var(--ink); }
+/* Mobile menu button (hidden on desktop) */
+.nav-toggle {
+  display: none; width: 36px; height: 36px; place-items: center; padding: 0;
+  border: 1px solid var(--rule); border-radius: var(--radius); background: transparent; color: var(--ink); cursor: pointer;
+}
+.nav-toggle-bar, .nav-toggle-bar::before, .nav-toggle-bar::after {
+  display: block; width: 16px; height: 1.6px; background: currentColor; border-radius: 1px; transition: transform .2s, background .2s;
+}
+.nav-toggle-bar { position: relative; }
+.nav-toggle-bar::before, .nav-toggle-bar::after { content: ""; position: absolute; left: 0; }
+.nav-toggle-bar::before { top: -5px; }
+.nav-toggle-bar::after { top: 5px; }
+.nav-open .nav-toggle-bar { background: transparent; }
+.nav-open .nav-toggle-bar::before { transform: translateY(5px) rotate(45deg); }
+.nav-open .nav-toggle-bar::after { transform: translateY(-5px) rotate(-45deg); }
 .theme-toggle {
   width: 36px; height: 36px; display: grid; place-items: center;
   border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer;
@@ -258,7 +273,17 @@ cite { font-style: italic; }
 @media (max-width: 760px) {
   .hero { align-items: flex-start; min-height: 0; padding-bottom: 300px; }
   #net { -webkit-mask-image: linear-gradient(to bottom, transparent calc(100% - 330px), #000 calc(100% - 250px)); mask-image: linear-gradient(to bottom, transparent calc(100% - 330px), #000 calc(100% - 250px)); }
-  .nav-list { display: none; }
+  .header-inner { gap: 10px; }
+  .nav-toggle { display: grid; }
+  .nav-list {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; gap: 2px; padding: 8px var(--gutter) 14px;
+    background: var(--bg); border-bottom: 1px solid var(--rule);
+    box-shadow: 0 12px 24px -16px rgba(0, 0, 0, .35);
+  }
+  .nav-open .nav-list { display: flex; }
+  .nav-list a { padding: 12px 10px; font-size: var(--step-0); }
+  .nav-list a[aria-current] { color: var(--ink); background: var(--accent-soft); }
   .about { grid-template-columns: minmax(0, 1fr); }
   .portrait { max-width: 220px; }
   .timeline li, .degrees li, .skills div { grid-template-columns: 1fr; gap: 4px; }
