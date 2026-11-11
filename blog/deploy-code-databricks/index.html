@@ -76,6 +76,19 @@
 <p>Training a model is the easy part. The hard part starts the day it has to run every week, on real data, without anyone copying files by hand. Without a clear structure, the same problems always appear: models moved manually between environments, jobs created by clicking in the interface, "it worked in my environment", and nobody sure which version is running in production.</p>
 <p>This post describes the architecture I used for a machine-learning project on Databricks. It is not about one specific model. It is about how to organise the repository, the environments and the deployment so that the path to production is reliable and repeatable.</p>
 
+<h2 id="setup">The setup this post assumes</h2>
+<p>Before anything else, it helps to be clear about the starting point. Everything in this post assumes that you work with <strong>three separate Databricks environments</strong>: development, QA and production. Each one is its own workspace, and <strong>each one has its own data</strong>.</p>
+<p>The data does not start equal in the three. Production holds the real data: it is the one that the business uses and it is updated every day. From time to time, that data is copied to QA and to dev, so that there is realistic data to work with there too.</p>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 146" role="img" aria-labelledby="d0t">
+<title id="d0t">Three separate Databricks workspaces: dev, QA and production. Production holds the real data, updated every day. From time to time that data is copied to QA and to dev.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<g class="node dev"><rect x="2" y="16" width="200" height="70" rx="6"/><text x="102" y="44" class="h dev">DEV</text><text x="102" y="64" class="sub">a copy of the data</text></g>
+<g class="node qa"><rect x="280" y="16" width="200" height="70" rx="6"/><text x="380" y="44" class="h qa">QA</text><text x="380" y="64" class="sub">a copy of the data</text></g>
+<g class="node prod"><rect x="558" y="16" width="200" height="70" rx="6"/><text x="658" y="44" class="h prod">PROD</text><text x="658" y="64" class="sub">the real data, updated daily</text></g>
+<path class="edge" d="M558 51H482" marker-end="url(#arr)"/><text x="520" y="41" class="sub">copy</text>
+<path class="edge" d="M658 86V116H102V88" marker-end="url(#arr)"/><text x="380" y="136" class="sub">periodic copy of production data</text>
+</svg></div><figcaption>The starting point: three workspaces, each with its own data. Production data is the source; QA and dev receive copies.</figcaption></figure>
+<p>Not every company works like this. Some have a single Databricks workspace for everything, and then part of what follows does not apply directly. But if you have separate environments, or plan to have them, this is a structure that makes good use of them.</p>
+
 <h2 id="two-ways">Two ways to ship a model</h2>
 <p>There are two common patterns for taking a model to production.</p>
 <ul>
@@ -114,7 +127,7 @@
 </div>
 
 <h2 id="environments">Three environments, three branches</h2>
-<p>We work with three Databricks workspaces that are fully separated: development, QA and production. The rule is simple: <strong>each workspace runs the code of one Git branch</strong>.</p>
+<p>The three workspaces are fully separated, and now each one gets its code in the same way. The rule is simple: <strong>each workspace runs the code of one Git branch</strong>.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 216" role="img" aria-labelledby="d2t">
 <title id="d2t">Three Databricks workspaces. Dev runs the code of the develop branch, QA runs the qa branch and production runs the main branch. Each workspace has its own data, jobs, MLflow and models.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
 <g class="pill dev"><rect x="50" y="4" width="140" height="30" rx="15" class="dev"/><text x="120" y="24" class="m dev">develop</text></g>
