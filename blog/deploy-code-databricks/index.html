@@ -315,6 +315,29 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 </ol>
 <p>None of these pieces is complicated on its own. The value is in how they fit together: once the structure exists, taking a change to production is opening a pull request.</p>
 </div>
+      <section class="comments" aria-labelledby="comments-title">
+        <h2 id="comments-title">Comments</h2>
+        <p class="comments-note">Comments are stored as a GitHub issue, so you need a GitHub account to write one.</p>
+        <div id="comments"></div>
+        <script>
+          (function () {
+            var dark = function () { return document.documentElement.dataset.theme !== 'light'; };
+            var s = document.createElement('script');
+            s.src = 'https://utteranc.es/client.js';
+            s.setAttribute('repo', 'carlestrullas/carlestrullas.github.io');
+            s.setAttribute('issue-term', 'pathname');
+            s.setAttribute('theme', dark() ? 'github-dark' : 'github-light');
+            s.crossOrigin = 'anonymous';
+            s.async = true;
+            document.getElementById('comments').appendChild(s);
+            // Keep the comment box in step with the site's theme toggle.
+            window.addEventListener('themechange', function () {
+              var f = document.querySelector('iframe.utterances-frame');
+              if (f) f.contentWindow.postMessage({ type: 'set-theme', theme: dark() ? 'github-dark' : 'github-light' }, 'https://utteranc.es');
+            });
+          })();
+        </script>
+      </section>
       <footer class="post-footer">
         <p>Questions, or would you do it differently? <a href="mailto:carlestrullasfernandez10@gmail.com">Write to me</a> or find me on <a href="https://linkedin.com/in/carlestrullas">LinkedIn</a>.</p>
       </footer>

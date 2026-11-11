@@ -53,7 +53,7 @@
 .takeaways { counter-reset: t; list-style: none !important; padding: 0 !important; }
 .takeaways li { counter-increment: t; display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); color: var(--ink); }
 .takeaways li::before { content: counter(t); width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: .875rem; font-weight: 600; }
-.post-footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--rule); color: var(--muted); }
+.post-footer { margin-top: 32px; color: var(--muted); }
 
 /* Diagram extras (on top of .flow in style.css) */
 .flow text.l { text-anchor: start; }
@@ -72,3 +72,9 @@
   .two-col { grid-template-columns: 1fr; }
   .prose figure .flow-scroll { overflow-x: auto; margin-right: 0; padding: 16px; }
 }
+
+/* Comments */
+.comments { margin-top: 64px; padding-top: 32px; border-top: 1px solid var(--rule); }
+.comments h2 { font-size: var(--step-3); letter-spacing: -0.01em; margin-bottom: 8px; }
+.comments-note { color: var(--muted); font-size: var(--step--1); }
+.comments .utterances { max-width: none; }
