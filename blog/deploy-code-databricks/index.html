@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deploy code, not models: an ML architecture on Databricks · Carles Trullàs</title>
+  <meta name="description" content="How to structure a machine-learning project on Databricks with one repository, three environments, Asset Bundles, CI/CD and versioned models.">
+  <meta name="author" content="Carles Trullàs">
+  <link rel="canonical" href="https://carlestrullas.github.io/blog/deploy-code-databricks/">
+
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://carlestrullas.github.io/blog/deploy-code-databricks/">
+  <meta property="og:title" content="Deploy code, not models: an ML architecture on Databricks · Carles Trullàs">
+  <meta property="og:description" content="How to structure a machine-learning project on Databricks with one repository, three environments, Asset Bundles, CI/CD and versioned models.">
+  <meta property="og:image" content="https://carlestrullas.github.io/images/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#111A24">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/blog.css">
+
+  <script>
+    // Dark by default; a saved choice from the toggle wins. Runs before paint to avoid a flash.
+    var t = 'dark';
+    try { t = localStorage.getItem('theme') || 'dark'; } catch (e) {}
+    document.documentElement.dataset.theme = t;
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Deploy code, not models: an ML architecture on Databricks",
+    "description": "How to structure a machine-learning project on Databricks with one repository, three environments, Asset Bundles, CI/CD and versioned models.",
+    "datePublished": "2026-11-11",
+    "author": { "@type": "Person", "name": "Carles Trullàs", "url": "https://carlestrullas.github.io/" }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="/" aria-label="Carles Trullàs, home">Carles Trullàs</a>
+      <nav aria-label="Sections">
+        <ul class="nav-list">
+          <li><a href="/#work">Work</a></li>
+          <li><a href="/#experience">Experience</a></li>
+          <li><a href="/#projects">Projects</a></li>
+          <li><a href="/blog/" aria-current="page">Blog</a></li>
+          <li><a href="/#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" type="button" aria-label="Switch colour theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="post">
+      <a class="post-back" href="/blog/">← All posts</a>
+      <header class="post-header">
+        <p class="post-date"><time datetime="2026-11-11">11 November 2026</time> · 9 min read</p>
+        <h1>Deploy code, not models: an ML architecture on Databricks</h1>
+        <p class="standfirst">One repository, three environments, and a pipeline where a pull request validates and a merge deploys. This is how I structure a machine-learning project on Databricks so that it reaches production in a reliable, repeatable way.</p>
+        <ul class="tags" aria-label="Topics"><li>Databricks</li><li>MLOps</li><li>Asset Bundles</li><li>CI/CD</li><li>MLflow</li></ul>
+      </header>
+      <div class="prose">
+<p>Training a model is the easy part. The hard part starts the day it has to run every week, on real data, without anyone copying files by hand. Without a clear structure, the same problems always appear: models moved manually between environments, jobs created by clicking in the interface, "it worked in my environment", and nobody sure which version is running in production.</p>
+<p>This post describes the architecture I used for a machine-learning project on Databricks. It is not about one specific model. It is about how to organise the repository, the environments and the deployment so that the path to production is boring and repeatable.</p>
+
+<h2 id="two-ways">Two ways to ship a model</h2>
+<p>There are two common patterns for taking a model to production.</p>
+<ul>
+  <li><strong>Deploy model.</strong> You train the model once, in the development environment, and then copy the trained model to the next environment.</li>
+  <li><strong>Deploy code.</strong> You promote the <em>code</em>. Each environment runs that code and trains its own model, with its own data.</li>
+</ul>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 236" role="img" aria-labelledby="d1t">
+<title id="d1t">Two ways to ship a model. Deploy model: the model is trained in dev and the trained model is copied to QA and production. Deploy code: the code moves from dev to QA to production and each environment trains its own model.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<text x="2" y="46" class="l h">Deploy model</text><text x="2" y="66" class="l sub">the trained model moves</text>
+<g class="node dev dim"><rect x="170" y="22" width="150" height="60" rx="6"/><text x="245" y="48">DEV</text><text x="245" y="66" class="sub">trains</text></g>
+<g class="node qa dim"><rect x="390" y="22" width="150" height="60" rx="6"/><text x="465" y="48">QA</text><text x="465" y="66" class="sub">gets a copy</text></g>
+<g class="node prod dim"><rect x="608" y="22" width="150" height="60" rx="6"/><text x="683" y="48">PROD</text><text x="683" y="66" class="sub">gets a copy</text></g>
+<path class="edge" d="M320 52H388" marker-end="url(#arr)"/><path class="edge" d="M540 52H606" marker-end="url(#arr)"/>
+<text x="354" y="42" class="sub">model</text><text x="573" y="42" class="sub">model</text>
+<text x="2" y="168" class="l h acc">Deploy code</text><text x="2" y="188" class="l sub">the code moves</text>
+<g class="node dev"><rect x="170" y="140" width="150" height="74" rx="6"/><text x="245" y="166">DEV</text><text x="245" y="184" class="sub">trains its own</text><text x="245" y="200" class="sub">model</text></g>
+<g class="node qa"><rect x="390" y="140" width="150" height="74" rx="6"/><text x="465" y="166">QA</text><text x="465" y="184" class="sub">trains its own</text><text x="465" y="200" class="sub">model</text></g>
+<g class="node prod"><rect x="608" y="140" width="150" height="74" rx="6"/><text x="683" y="166">PROD</text><text x="683" y="184" class="sub">trains its own</text><text x="683" y="200" class="sub">model</text></g>
+<path class="edge" d="M320 177H388" marker-end="url(#arr)"/><path class="edge" d="M540 177H606" marker-end="url(#arr)"/>
+<text x="354" y="167" class="sub acc">code</text><text x="573" y="167" class="sub acc">code</text>
+</svg></div><figcaption>With deploy model, a trained model travels between environments. With deploy code, only the code travels, and each environment trains its own model.</figcaption></figure>
+<p>We used <strong>deploy code</strong>. A model never travels between environments. Only the code does.</p>
+
+<h3>Why deploy code</h3>
+<div class="two-col">
+  <div><h3>What you gain</h3><ul>
+    <li>The production model learns from production data.</li>
+    <li>The training code reaches production already tested in dev and QA.</li>
+    <li>Everything comes from Git: reviewed, versioned and repeatable.</li>
+    <li>Production data never leaves production.</li>
+  </ul></div>
+  <div><h3>What it costs</h3><ul>
+    <li>You train in every environment, so you pay for more compute.</li>
+    <li>Dev and QA need data that looks like production data.</li>
+  </ul></div>
+</div>
+
+<h2 id="environments">Three environments, three branches</h2>
+<p>We work with three Databricks workspaces that are fully separated: development, QA and production. The rule is simple: <strong>each workspace runs the code of one Git branch</strong>.</p>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 216" role="img" aria-labelledby="d2t">
+<title id="d2t">Three Databricks workspaces. Dev runs the code of the develop branch, QA runs the qa branch and production runs the main branch. Each workspace has its own data, jobs, MLflow and models.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<g class="pill dev"><rect x="50" y="4" width="140" height="30" rx="15" class="dev"/><text x="120" y="24" class="m dev">develop</text></g>
+<path class="edge" d="M120 36V60" marker-end="url(#arr)"/>
+<g class="node dev"><rect x="10" y="62" width="220" height="150" rx="6"/><text x="120" y="90" class="h dev">DEV</text><text x="120" y="108" class="sub">development workspace</text>
+<text x="120" y="136">its own data</text><text x="120" y="156">its own jobs</text><text x="120" y="176">its own MLflow</text><text x="120" y="196">its own models</text></g><g class="pill qa"><rect x="310" y="4" width="140" height="30" rx="15" class="qa"/><text x="380" y="24" class="m qa">qa</text></g>
+<path class="edge" d="M380 36V60" marker-end="url(#arr)"/>
+<g class="node qa"><rect x="270" y="62" width="220" height="150" rx="6"/><text x="380" y="90" class="h qa">QA</text><text x="380" y="108" class="sub">validation workspace</text>
+<text x="380" y="136">its own data</text><text x="380" y="156">its own jobs</text><text x="380" y="176">its own MLflow</text><text x="380" y="196">its own models</text></g><g class="pill prod"><rect x="570" y="4" width="140" height="30" rx="15" class="prod"/><text x="640" y="24" class="m prod">main</text></g>
+<path class="edge" d="M640 36V60" marker-end="url(#arr)"/>
+<g class="node prod"><rect x="530" y="62" width="220" height="150" rx="6"/><text x="640" y="90" class="h prod">PROD</text><text x="640" y="108" class="sub">production workspace</text>
+<text x="640" y="136">its own data</text><text x="640" y="156">its own jobs</text><text x="640" y="176">its own MLflow</text><text x="640" y="196">its own models</text></g>
+</svg></div><figcaption>Each workspace runs the code of exactly one Git branch and shares nothing with the others.</figcaption></figure>
+<p>Nothing is shared. Each environment has its own data catalogs, its own jobs, its own MLflow experiments and its own registered models. If something breaks in dev, production does not notice.</p>
+
+<h2 id="repository">One repository, and what each piece is for</h2>
+<p>Everything lives in a single repository. The layout is small, and each piece has one job.</p>
+<pre><code>my-ml-project/
+├─ <span class="k">databricks.yml</span>        <span class="c"># the central file: what is deployed, and where</span>
+├─ <span class="k">resources/</span>jobs/*.yml   <span class="c"># Databricks jobs, defined as YAML</span>
+├─ <span class="k">src/</span>                  <span class="c"># the code the jobs run: training, inference…</span>
+├─ <span class="k">tests/</span>                <span class="c"># automated tests that protect every change</span>
+└─ <span class="k">cicd/</span>pipeline.yml     <span class="c"># CI/CD: connects Git with Databricks</span></code></pre>
+<p>If you understand what these five pieces do, you understand the architecture. The rest of this post goes through them.</p>
+
+<h2 id="bundle">databricks.yml: what is deployed, and where</h2>
+<p><a href="https://docs.databricks.com/dev-tools/bundles/">Databricks Asset Bundles</a> (the documentation now calls them Declarative Automation Bundles) package your code and your job definitions as one unit that can be deployed. The file <code>databricks.yml</code> is the entry point. A simplified version looks like this:</p>
+<span class="pre-label">databricks.yml</span>
+<pre><code><span class="k">bundle</span>:
+  <span class="k">name</span>: my-ml-project
+
+<span class="k">include</span>:
+  - resources/jobs/*.yml
+
+<span class="k">variables</span>:
+  <span class="k">environment</span>:      <span class="c"># name of the environment</span>
+  <span class="k">cluster_id</span>:       <span class="c"># compute</span>
+  <span class="k">catalog</span>:          <span class="c"># data of the environment</span>
+  <span class="k">training_cron</span>:    <span class="c"># training schedule</span>
+
+<span class="k">targets</span>:
+  <span class="k">personal</span>:
+    <span class="k">mode</span>: <span class="v">development</span>
+  <span class="k">dev</span>: {}
+  <span class="k">qa</span>: {}
+  <span class="k">prod</span>:
+    <span class="k">variables</span>:
+      <span class="k">training_cron</span>: <span class="v">"every week"</span></code></pre>
+<p>It has three parts:</p>
+<ul>
+  <li><strong>The bundle</strong>: its name and which resource files it includes.</li>
+  <li><strong>The variables</strong>: everything that changes from one environment to another, such as the cluster, the data catalog or the schedule.</li>
+  <li><strong>The targets</strong>: one destination per environment. A target can override variables. For example, production can retrain more often than the other environments.</li>
+</ul>
+<p>The same bundle is deployed to any target with a single command:</p>
+<pre><code>databricks bundle deploy -t &lt;target&gt;</code></pre>
+<p>The real hosts, cluster IDs and catalog names are not in this file. The pipeline passes them in at deployment time, so the repository contains no environment secrets.</p>
+
+<h2 id="jobs">Jobs are code too</h2>
+<p>The jobs are not created by hand in the Databricks interface. They are YAML files in <code>resources/</code>. This is a simplified training job:</p>
+<span class="pre-label">resources/jobs/training.yml</span>
+<pre><code><span class="k">resources</span>:
+  <span class="k">jobs</span>:
+    <span class="k">train_pipeline</span>:
+      <span class="k">name</span>: Training pipeline <span class="v">${var.environment}</span>
+      <span class="k">schedule</span>: <span class="v">${var.training_cron}</span>
+      <span class="k">tasks</span>:
+        - <span class="k">task_key</span>: train_model
+          <span class="k">notebook_path</span>: src/training/train_pipeline
+          <span class="k">cluster_id</span>: <span class="v">${var.cluster_id}</span>
+      <span class="k">parameters</span>:
+        - <span class="k">catalog</span>: <span class="v">${var.catalog}</span></code></pre>
+<p>Nothing is fixed. The name, the schedule, the cluster and the data catalog all come from the bundle variables. So <strong>one definition creates the same job in every environment</strong>, and in each one it points to the data of that environment.</p>
+<p>In the Databricks interface, a job deployed this way shows a notice saying that it comes from a bundle. That is the correct behaviour: if you want to change the job, you change the repository, not the interface.</p>
+
+<h2 id="cicd">CI/CD: the pull request validates, the merge deploys</h2>
+<p>The CI/CD pipeline is one more YAML file in the repository. We used Azure DevOps, but the idea is the same in GitHub Actions or any other tool. It defines when the pipeline runs and what it does in each case.</p>
+<span class="pre-label">cicd/pipeline.yml</span>
+<pre><code><span class="k">pr</span>:                <span class="c"># runs on pull requests to these branches</span>
+  <span class="k">branches</span>: [develop, qa]
+
+<span class="k">trigger</span>:           <span class="c"># runs on merges to these branches</span>
+  <span class="k">branches</span>: [develop, qa, main]
+
+<span class="k">stages</span>:
+  - <span class="v">Validate</span>       <span class="c"># tests + bundle validate</span>
+  - <span class="v">Deploy_DEV</span>     <span class="c"># only on develop</span>
+  - <span class="v">Deploy_QA</span>      <span class="c"># only on qa</span>
+  - <span class="v">Deploy_PROD</span>    <span class="c"># only on main</span></code></pre>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 232" role="img" aria-labelledby="d3t">
+<title id="d3t">What the pipeline does for each event. A pull request runs validation only. A merge to develop deploys to dev, a merge to qa deploys to QA and a merge to main deploys to production.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<g class="node accent"><rect x="2" y="2" width="230" height="44" rx="6"/><text x="117" y="29">Pull request</text></g>
+<path class="edge" d="M232 24H288" marker-end="url(#arr)"/>
+<g class="node"><rect x="290" y="2" width="468" height="44" rx="6"/><text x="306" y="22" class="l">Validate</text><text x="306" y="38" class="l sub">tests, dependency scan, bundle validate. Nothing is deployed.</text></g>
+<g class="node dev"><rect x="2" y="60" width="230" height="44" rx="6"/><text x="117" y="87">Merge to develop</text></g>
+<path class="edge" d="M232 82H288" marker-end="url(#arr)"/>
+<g class="node"><rect x="290" y="60" width="468" height="44" rx="6"/><text x="306" y="80" class="l">bundle deploy -t dev</text><text x="306" y="96" class="l sub">validate again, then deploy to the dev workspace</text></g>
+<g class="node qa"><rect x="2" y="118" width="230" height="44" rx="6"/><text x="117" y="145">Merge to qa</text></g>
+<path class="edge" d="M232 140H288" marker-end="url(#arr)"/>
+<g class="node"><rect x="290" y="118" width="468" height="44" rx="6"/><text x="306" y="138" class="l">bundle deploy -t qa</text><text x="306" y="154" class="l sub">deploy to the QA workspace</text></g>
+<g class="node prod"><rect x="2" y="176" width="230" height="44" rx="6"/><text x="117" y="203">Merge to main</text></g>
+<path class="edge" d="M232 198H288" marker-end="url(#arr)"/>
+<g class="node"><rect x="290" y="176" width="468" height="44" rx="6"/><text x="306" y="196" class="l">bundle deploy -t prod</text><text x="306" y="212" class="l sub">deploy to production and tag the release in Git</text></g>
+</svg></div><figcaption>The pull request validates; the merge deploys. The branch decides the destination.</figcaption></figure>
+<p>When you open a pull request, the pipeline runs the automated tests, scans the dependencies for known vulnerabilities and runs <code>databricks bundle validate</code>. Nothing is deployed. When the pull request is merged, the pipeline deploys the bundle to the environment of that branch.</p>
+<p>The result is that <strong>nobody deploys by hand to the shared environments</strong>. If the code is in <code>main</code>, it is in production. If it is not, it is not.</p>
+
+<h2 id="development">How we develop</h2>
+<p>Every change starts in its own branch, created from <code>develop</code>: a <code>feature/</code>, a <code>fix/</code> or a <code>bugfix/</code>. Before merging anything, you can deploy the whole bundle under your own name with the <code>personal</code> target.</p>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 214" role="img" aria-labelledby="d4t">
+<title id="d4t">Development flow. A feature branch starts from develop. While working on it, the developer deploys a personal copy of the bundle to the dev workspace. When the change works, a pull request runs the tests and the branch is merged back into develop.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<path class="line-dev" d="M20 150H740"/>
+<path class="line-acc" d="M130 150C190 150 190 50 250 50H520C580 50 580 150 640 150"/>
+<circle class="dev" cx="130" cy="150" r="7"/><circle class="dev" cx="640" cy="150" r="7"/>
+<circle class="acc" cx="300" cy="50" r="6"/><circle class="acc" cx="385" cy="50" r="6"/><circle class="acc" cx="470" cy="50" r="6"/>
+<text x="20" y="178" class="l h dev">develop</text>
+<text x="385" y="28" class="h acc">feature/…  ·  fix/…  ·  bugfix/…</text>
+<path class="edge" d="M385 58V84" marker-end="url(#arr)"/>
+<g class="node accent"><rect x="265" y="86" width="240" height="46" rx="6"/><text x="385" y="106" class="m">bundle deploy -t personal</text><text x="385" y="122" class="sub">your own copy in the dev workspace</text></g>
+<text x="640" y="178" class="h">Pull request</text><text x="640" y="196" class="sub">tests, review, merge</text>
+</svg></div><figcaption>Every change lives in its own branch and can be tested in Databricks before it is merged.</figcaption></figure>
+<pre><code>databricks bundle deploy -t personal    <span class="c"># deploy your own copy</span>
+databricks bundle destroy -t personal   <span class="c"># remove it when you finish</span></code></pre>
+<p>The <code>personal</code> target uses <code>mode: development</code>. That has three useful effects:</p>
+<ul>
+  <li>The files are deployed to your own user folder in the dev workspace, not to the shared one.</li>
+  <li>The jobs carry your user name as a prefix, so they do not replace the jobs of the team.</li>
+  <li>The schedules are paused. Your copy only runs when you start it.</li>
+</ul>
+<p>Your personal deployment uses the development data, so you test the change in real conditions. When it works, you open a pull request to <code>develop</code>: the tests run, a teammate reviews it, and it is merged.</p>
+
+<h2 id="promotion">Promotion to QA and production</h2>
+<p>The merge to <code>develop</code> deploys the change to the dev workspace. To publish a release, we cut a <code>release</code> branch from <code>develop</code> and take it to <code>qa</code> with a pull request. That deploys to QA, where the release is validated. If QA approves it, the same release goes to <code>main</code>, which deploys to production and creates a version tag in Git.</p>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 96" role="img" aria-labelledby="d5t">
+<title id="d5t">Promotion flow: develop is deployed to dev; a release branch is cut from develop and merged into qa, which deploys to QA; after validation the same release is merged into main, which deploys to production and creates a version tag.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<g class="node dev"><rect x="2" y="18" width="150" height="60" rx="6"/><text x="77" y="44" class="m">develop</text><text x="77" y="62" class="sub">deployed to DEV</text></g>
+<g class="node accent"><rect x="196" y="18" width="150" height="60" rx="6"/><text x="271" y="44" class="m">release/x.y.z</text><text x="271" y="62" class="sub">release candidate</text></g>
+<g class="node qa"><rect x="400" y="18" width="150" height="60" rx="6"/><text x="475" y="44" class="m">qa</text><text x="475" y="62" class="sub">deployed to QA</text></g>
+<g class="node prod"><rect x="604" y="18" width="154" height="60" rx="6"/><text x="681" y="44" class="m">main</text><text x="681" y="62" class="sub">PROD + version tag</text></g>
+<path class="edge" d="M152 48H194" marker-end="url(#arr)"/><path class="edge" d="M346 48H398" marker-end="url(#arr)"/><path class="edge" d="M550 48H602" marker-end="url(#arr)"/>
+<text x="173" y="38" class="sub">cut</text><text x="372" y="38" class="sub">PR</text><text x="576" y="38" class="sub">PR</text>
+</svg></div><figcaption>The same code goes through the three environments, always through a pull request.</figcaption></figure>
+
+<h2 id="inside">What happens inside each environment</h2>
+<p>Once the bundle is deployed, each environment has a training job. From here, the life of a model is the same everywhere:</p>
+<figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 150" role="img" aria-labelledby="d6t">
+<title id="d6t">Inside one environment: the environment's data feeds a scheduled training job; each run is logged to MLflow; the model is registered as a new version in Unity Catalog; a version that passes the quality gate receives the champion alias; the inference job loads the champion.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+<g class="node"><rect x="2" y="30" width="118" height="60" rx="6"/><text x="61" y="56">Data</text><text x="61" y="74" class="sub">of this environment</text></g>
+<g class="node accent"><rect x="156" y="30" width="124" height="60" rx="6"/><text x="218" y="56">Training job</text><text x="218" y="74" class="sub">scheduled</text></g>
+<g class="node"><rect x="316" y="30" width="118" height="60" rx="6"/><text x="375" y="56">MLflow run</text><text x="375" y="74" class="sub">params, metrics</text></g>
+<g class="node"><rect x="470" y="14" width="134" height="122" rx="6"/><text x="537" y="38">Model registry</text><text x="537" y="54" class="sub">Unity Catalog</text><text x="537" y="78" class="m">v1</text><text x="537" y="96" class="m">v2</text></g>
+<g class="champ"><rect x="484" y="106" width="106" height="22" rx="4"/><text x="537" y="121" class="m">v3 @champion</text></g>
+<g class="node"><rect x="640" y="30" width="118" height="60" rx="6"/><text x="699" y="56">Inference job</text><text x="699" y="74" class="sub">loads @champion</text></g>
+<path class="edge" d="M120 60H154" marker-end="url(#arr)"/><path class="edge" d="M280 60H314" marker-end="url(#arr)"/><path class="edge" d="M434 60H468" marker-end="url(#arr)"/><path class="edge" d="M604 60H638" marker-end="url(#arr)"/>
+</svg></div><figcaption>The life of a model inside a single environment. The same thing happens, independently, in dev, QA and production.</figcaption></figure>
+<ol>
+  <li>The <strong>training job</strong> runs on a schedule, with the data of that environment.</li>
+  <li>Every run is logged in the environment's <strong>MLflow</strong>: parameters, metrics and artifacts.</li>
+  <li>The trained model is registered as a <strong>new version</strong> in the environment's model registry, in Unity Catalog.</li>
+  <li>If the new version passes a quality threshold, it receives the alias <code>champion</code>.</li>
+  <li>The <strong>inference job</strong> does not know about version numbers. It always loads the champion: <code>models:/&lt;catalog&gt;.&lt;schema&gt;.&lt;model&gt;@champion</code>.</li>
+</ol>
+<p>The alias is what makes this clean. Changing the model that inference uses means moving the alias to another version. No code changes, no redeploy.</p>
+
+<h2 id="own-model">Each environment, its own model</h2>
+<p>This is repeated, in the same way, in the three environments. Each one has its own MLflow and its own version history.</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Environment</th><th>Code from</th><th>Experiments</th><th>Model versions</th></tr></thead>
+  <tbody>
+    <tr><td>DEV</td><td><code>develop</code></td><td>MLflow in dev</td><td>v11, <strong>v12 @champion</strong></td></tr>
+    <tr><td>QA</td><td><code>qa</code></td><td>MLflow in QA</td><td>v4, <strong>v5 @champion</strong></td></tr>
+    <tr><td>PROD</td><td><code>main</code></td><td>MLflow in prod</td><td>v30, <strong>v31 @champion</strong></td></tr>
+  </tbody>
+</table></div>
+<p>Version 12 in dev has nothing to do with version 31 in production. They were trained by the same code, but on different data and at different times. The production model was trained in production, with production data. Between environments, only the code moves.</p>
+
+<h2 id="takeaways">Six ideas to take away</h2>
+<ol class="takeaways">
+  <li>Deploy code: promote the code, not the model.</li>
+  <li>Three environments, three branches: develop, qa and main.</li>
+  <li><span><code>databricks.yml</code> defines what is deployed, and where.</span></li>
+  <li>CI/CD: the pull request validates, the merge deploys.</li>
+  <li>Each environment trains and versions its own model.</li>
+  <li>Develop in your own branch, with a personal deployment.</li>
+</ol>
+<p>None of these pieces is complicated on its own. The value is in how they fit together: once the structure exists, taking a change to production is opening a pull request.</p>
+</div>
+      <footer class="post-footer">
+        <p>Questions, or would you do it differently? <a href="mailto:carlestrullasfernandez10@gmail.com">Write to me</a> or find me on <a href="https://linkedin.com/in/carlestrullas">LinkedIn</a>.</p>
+      </footer>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>© <span id="year">2026</span> Carles Trullàs</p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

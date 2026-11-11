@@ -20,3 +20,13 @@ python3 -m http.server 8000
 ```
 
 then open http://localhost:8000.
+
+## Blog
+
+Posts live under `blog/`, one folder per post:
+
+- `blog/index.html` lists the posts, newest first.
+- `blog/<post-slug>/index.html` is one post.
+- `css/blog.css` holds the blog styles (article text, code blocks, diagrams). It builds on `css/style.css`.
+
+To add a post, copy an existing post folder, change the content, and add an entry to the list in `blog/index.html`.
