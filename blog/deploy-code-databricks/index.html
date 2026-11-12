@@ -215,6 +215,25 @@
       <span class="k">parameters</span>:
         - <span class="k">catalog</span>: <span class="v">${var.catalog}</span></code></pre>
 <p>Nothing is fixed. The name, the schedule, the cluster and the data catalog all come from the bundle variables. So <strong>one definition creates the same job in every environment</strong>, and in each one it points to the data of that environment.</p>
+<figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock-row">
+<div class="mock"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">my-company-dev.cloud.databricks.com</div></div>
+<div class="top"><span class="sq" style="background:var(--dev)"></span>my-company-dev<span class="av">YN</span></div>
+<div class="main"><h4>Jobs &amp; Pipelines</h4><div class="tabs"><span class="on">Jobs &amp; pipelines</span><span>Runs</span></div>
+<table><thead><tr><th>Name</th><th>Trigger</th><th>Recent runs</th></tr></thead><tbody>
+<tr class="hl"><td class="lnk">Training pipeline dev</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr>
+<tr><td class="lnk">Inference pipeline dev</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr></tbody></table></div></div><div class="mock"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">my-company-qa.cloud.databricks.com</div></div>
+<div class="top"><span class="sq" style="background:var(--qa)"></span>my-company-qa<span class="av">YN</span></div>
+<div class="main"><h4>Jobs &amp; Pipelines</h4><div class="tabs"><span class="on">Jobs &amp; pipelines</span><span>Runs</span></div>
+<table><thead><tr><th>Name</th><th>Trigger</th><th>Recent runs</th></tr></thead><tbody>
+<tr class="hl"><td class="lnk">Training pipeline qa</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr>
+<tr><td class="lnk">Inference pipeline qa</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr></tbody></table></div></div><div class="mock"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">my-company-prod.cloud.databricks.com</div></div>
+<div class="top"><span class="sq" style="background:var(--prod)"></span>my-company-prod<span class="av">YN</span></div>
+<div class="main"><h4>Jobs &amp; Pipelines</h4><div class="tabs"><span class="on">Jobs &amp; pipelines</span><span>Runs</span></div>
+<table><thead><tr><th>Name</th><th>Trigger</th><th>Recent runs</th></tr></thead><tbody>
+<tr class="hl"><td class="lnk">Training pipeline prod</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr>
+<tr><td class="lnk">Inference pipeline prod</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr></tbody></table></div></div>
+</div></div><figcaption>The same YAML definition, deployed three times. Each workspace has its own training and inference jobs, and each one reads the data of its own environment.</figcaption></figure>
+
 <p>In the Databricks interface, a job deployed this way shows a notice saying that it comes from a bundle. That is the correct behaviour: if you want to change the job, you change the repository, not the interface.</p>
 
 <h2 id="cicd">CI/CD: the pull request validates, the merge deploys</h2>
@@ -247,6 +266,25 @@
 <g class="node"><rect x="290" y="176" width="468" height="44" rx="6"/><text x="306" y="196" class="l">bundle deploy -t prod</text><text x="306" y="212" class="l sub">deploy to production and tag the release in Git</text></g>
 </svg></div><figcaption>The pull request validates; the merge deploys. The branch decides the destination.</figcaption></figure>
 <p>When you open a pull request, the pipeline runs the automated tests, scans the dependencies for known vulnerabilities and runs <code>databricks bundle validate</code>. Nothing is deployed. When the pull request is merged, the pipeline deploys the bundle to the environment of that branch.</p>
+<figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock-stack">
+<div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://dev.azure.com/my-company/my-ml-project/_build/results</div></div>
+<div class="ado-top"><b>Azure DevOps</b><span>my-company / my-ml-project / Pipelines / my-ml-project-ci</span><span class="av blue">YN</span></div>
+<div class="body"><div class="side"><div style="font-weight:600">my-ml-project</div><div>Overview</div><div>Boards</div><div>Repos</div><div class="on">Pipelines</div><div>Environments</div><div>Test Plans</div><div>Artifacts</div></div>
+<div class="ado-main"><div class="hrow"><span class="ok">✓</span><h4 style="margin:0">#20261111.3 • PR 412: feature/new-model into develop</h4><span class="mbtn">Run new</span></div>
+<div class="tabs" style="margin-top:8px"><span class="on">Summary</span><span>Tests</span><span>Code Coverage</span></div>
+<div class="card facts"><div>Pull request by<b>your.name</b></div><div>Repository and version<b>my-ml-project · <span class="lnk">refs/pull/412/merge</span></b></div><div>Time started and elapsed<b>Today at 10:12 · 6m 58s</b></div><div>Tests and coverage<b class="lnk">100% passed</b></div></div>
+<div class="card"><div class="sub" style="color:#222;font-weight:500">Stages</div><div class="stages"><div class="stage"><div class="hrow"><span class="ok">✓</span>Validate bundle</div><small>1 job completed · 6m 41s</small></div><span class="ln"></span><div class="stage sk"><div class="hrow"><span class="skip">›</span>Deploy bundle DEV</div><small>Skipped</small></div><span class="ln"></span><div class="stage sk"><div class="hrow"><span class="skip">›</span>Deploy bundle QA</div><small>Skipped</small></div><span class="ln"></span><div class="stage sk"><div class="hrow"><span class="skip">›</span>Deploy bundle PROD</div><small>Skipped</small></div></div></div>
+</div></div></div>
+<div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://dev.azure.com/my-company/my-ml-project/_build/results</div></div>
+<div class="ado-top"><b>Azure DevOps</b><span>my-company / my-ml-project / Pipelines / my-ml-project-ci</span><span class="av blue">YN</span></div>
+<div class="body"><div class="side"><div style="font-weight:600">my-ml-project</div><div>Overview</div><div>Boards</div><div>Repos</div><div class="on">Pipelines</div><div>Environments</div><div>Test Plans</div><div>Artifacts</div></div>
+<div class="ado-main"><div class="hrow"><span class="ok">✓</span><h4 style="margin:0">#20261111.9 • Merged PR 418: release/1.4.0</h4><span class="mbtn">Run new</span></div>
+<div class="tabs" style="margin-top:8px"><span class="on">Summary</span><span>Tests</span><span>Code Coverage</span></div>
+<div class="card facts"><div>Individual CI by<b>your.name</b></div><div>Repository and version<b>my-ml-project · <span class="lnk">main</span></b></div><div>Time started and elapsed<b>Today at 10:12 · 4m 02s</b></div><div>Tests and coverage<b class="lnk">—</b></div></div>
+<div class="card"><div class="sub" style="color:#222;font-weight:500">Stages</div><div class="stages"><div class="stage sk"><div class="hrow"><span class="skip">›</span>Validate bundle</div><small>Skipped</small></div><span class="ln"></span><div class="stage sk"><div class="hrow"><span class="skip">›</span>Deploy bundle DEV</div><small>Skipped</small></div><span class="ln"></span><div class="stage sk"><div class="hrow"><span class="skip">›</span>Deploy bundle QA</div><small>Skipped</small></div><span class="ln"></span><div class="stage"><div class="hrow"><span class="ok">✓</span>Deploy bundle PROD</div><small>1 job completed · 3m 47s</small></div></div></div>
+</div></div></div>
+</div></div><figcaption>Top: a pull request into <code>develop</code>. The pipeline only validates, and every deploy stage is skipped. Bottom: the release is merged into <code>main</code>, and only the production deploy runs.</figcaption></figure>
+
 <p>The result is that <strong>nobody deploys by hand to the shared environments</strong>. If the code is in <code>main</code>, it is in production. If it is not, it is not.</p>
 
 <h2 id="development">How we develop</h2>
@@ -271,6 +309,11 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
   <li>The jobs carry your user name as a prefix, so they do not replace the jobs of the team.</li>
   <li>The schedules are paused. Your copy only runs when you start it.</li>
 </ul>
+<figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://my-company-dev.cloud.databricks.com</div></div><div class="top"><span class="sq" style="background:var(--dev)"></span>my-company-dev<span class="search">Search data, notebooks, recents, and more…</span><span class="ws">workspace-dev ▾</span><span class="av" style="margin-left:0">YN</span></div>
+<div class="body"><div class="side"><div class="new">+ New</div><div>Workspace</div><div>Recents</div><div>Catalog</div><div class="on">Jobs &amp; Pipelines</div><div>Compute</div><div class="grp">SQL</div><div>SQL Editor</div><div>Dashboards</div><div class="grp">AI/ML</div><div>Experiments</div><div>Models</div><div>Serving</div></div><div class="main"><div class="hrow"><h4>Jobs &amp; Pipelines</h4><span class="mbtn">Create ▾</span></div><div class="tabs"><span class="on">Jobs &amp; pipelines</span><span>Runs</span></div>
+<table><thead><tr><th>Name</th><th>Type</th><th>Tags</th><th>Run as</th><th>Trigger</th><th>Recent runs</th></tr></thead><tbody><tr class=""><td class="lnk">Training pipeline dev</td><td>Job</td><td><span class="tag">project: my-ml-project</span></td><td>sp-cicd-dev</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr><tr class=""><td class="lnk">Inference pipeline dev</td><td>Job</td><td><span class="tag">project: my-ml-project</span></td><td>sp-cicd-dev</td><td>Scheduled</td><td><span class="runs"><i></i><i></i><i></i><i></i><i></i></span></td></tr><tr class="hl"><td class="lnk">[dev your_name] Training pipeline personal</td><td>Job</td><td><span class="tag">dev: your_name</span></td><td>your.name@my-company.com</td><td><span class="tag">Paused</span></td><td><span class="runs off"><i></i><i></i><i></i><i></i><i></i></span></td></tr><tr class="hl"><td class="lnk">[dev your_name] Inference pipeline personal</td><td>Job</td><td><span class="tag">dev: your_name</span></td><td>your.name@my-company.com</td><td><span class="tag">Paused</span></td><td><span class="runs off"><i></i><i></i><i></i><i></i><i></i></span></td></tr><tr class=""><td class="lnk">[dev a_teammate] Training pipeline personal</td><td>Job</td><td><span class="tag">dev: a_teammate</span></td><td>a.teammate@my-company.com</td><td><span class="tag">Paused</span></td><td><span class="runs off"><i></i><i></i><i></i><i></i><i></i></span></td></tr></tbody></table></div></div></div>
+</div><figcaption>The dev workspace while you work on a change. The team's jobs keep running on schedule. Your personal copies carry your name as a prefix and stay paused until you start them.</figcaption></figure>
+
 <p>Your personal deployment uses the development data, so you test the change in real conditions. When it works, you open a pull request to <code>develop</code>: the tests run, a teammate reviews it, and it is merged.</p>
 
 <h2 id="promotion">Promotion to QA and production</h2>
@@ -314,6 +357,14 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 <p>The alias deserves a closer look, because it solves a real problem.</p>
 <p>Every week, the training job creates a new model version: v30, then v31, then v32. If the inference job pointed to a fixed number, someone would have to change the code and deploy again every time a new version appeared. And if a new version turned out to be worse, nothing would stop it from being used.</p>
 <p>An <strong>alias</strong> is a name that points to one version, and that you can move. The inference job only knows the name <code>champion</code>. It does not care which number is behind it.</p>
+<figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://my-company-prod.cloud.databricks.com</div></div><div class="top"><span class="sq" style="background:var(--prod)"></span>my-company-prod<span class="search">Search data, notebooks, recents, and more…</span><span class="ws">workspace-prod ▾</span><span class="av" style="margin-left:0">YN</span></div>
+<div class="body"><div class="side"><div class="new">+ New</div><div>Workspace</div><div>Recents</div><div class="on">Catalog</div><div>Jobs &amp; Pipelines</div><div>Compute</div><div class="grp">SQL</div><div>SQL Editor</div><div>Dashboards</div><div class="grp">AI/ML</div><div>Experiments</div><div>Models</div><div>Serving</div></div><div class="tree"><div>▾ prod_catalog</div><div style="padding-left:12px">▾ ml</div><div style="padding-left:24px">▸ Tables (12)</div><div style="padding-left:24px">▾ Models (1)</div><div class="on" style="margin-left:30px">◆ training_model</div><div style="padding-left:12px">▸ gold</div><div style="padding-left:12px">▸ silver</div></div>
+<div class="main"><div class="crumb">Catalog Explorer › prod_catalog › ml ›</div><div class="hrow"><h4>◆ training_model</h4><span class="mbtn">Serve this model</span></div>
+<div class="tabs"><span class="on">Overview</span><span>Details</span><span>Permissions</span><span>Lineage</span></div>
+<div class="meta">Owner: sp-cicd-prod · Full name: <span class="mono">prod_catalog.ml.training_model</span></div>
+<table><thead><tr><th>Version</th><th>Time registered</th><th>Aliases</th><th>Tags</th><th>Created by</th></tr></thead><tbody><tr class="hl"><td class="lnk">Version 31</td><td>3 days ago</td><td><span class=chip>@champion</span></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 30</td><td>10 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 29</td><td>13 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 28</td><td>17 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 27</td><td>24 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr></tbody></table></div></div></div>
+</div><figcaption>The registered model in production. A new version appears every week, but only one carries the <code>@champion</code> alias, and that is the one the inference job loads.</figcaption></figure>
+
 <ul>
   <li>If the new version passes the quality threshold, the alias moves to it, and the next inference run uses it.</li>
   <li>If it does not pass, the alias stays where it was, and inference keeps using the previous model.</li>
