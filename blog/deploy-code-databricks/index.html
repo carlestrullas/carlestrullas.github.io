@@ -72,7 +72,7 @@
     <article class="post">
       <a class="post-back" href="/blog/">← All posts</a>
       <header class="post-header">
-        <p class="post-date"><time datetime="2026-11-11">11 November 2026</time> · 12 min read</p>
+        <p class="post-date"><time datetime="2026-11-11">11 November 2026</time> · 14 min read</p>
         <h1>Deploy code ML architecture on Databricks</h1>
         <p class="standfirst">One repository, three environments, and a pipeline where a pull request validates and a merge deploys. This is how I structure a machine-learning project on Databricks so that it reaches production in a reliable, repeatable way.</p>
         <ul class="tags" aria-label="Topics"><li>Databricks</li><li>MLOps</li><li>Asset Bundles</li><li>CI/CD</li><li>MLflow</li></ul>
@@ -119,14 +119,14 @@
 <p>Deploy code is not a Databricks feature. It is a general way of working in MLOps, and you can apply it on any platform. This post shows how we applied it on Databricks.</p>
 
 <h3>Why we chose deploy code</h3>
-<p>Our model has to learn from the newest real data, and that data lives in production. With deploy code, the production model is trained in production, with production data. The development workspace never needs access to production data, and no model trained on that data ever leaves the production workspace.</p>
+<p>Our model has to learn from the newest real data, and that data lives in production. With deploy code, the production model is trained in production, with production data. The development workspace never needs direct access to production data, and no model trained on that data ever leaves the production workspace.</p>
 <p>Retraining also becomes simple. The training job runs on a schedule in production, so a new model appears every week without anyone training it by hand or copying a model file from one place to another.</p>
-<p>There is a second benefit, and it is easy to miss. With deploy code, the thing you test in dev and QA is the training code itself. By the time that code reaches production, it has already run successfully twice, in two different environments. If something is wrong with it, you usually find out before production does.</p>
+<p>There is one more benefit, and it is easy to miss. With deploy code, the thing you test in dev and QA is the training code itself. By the time that code reaches production, it has already run successfully twice, in two different environments. If something is wrong with it, you usually find out before production does.</p>
 <div class="callout"><p>Deploy model is not a bad choice. If training takes days, if a model must be approved once and then never change, or if everything runs in a single workspace, it is often the better option. The right pattern depends on your project.</p></div>
 <p>In short, this is the trade-off:</p>
 <div class="two-col">
   <div><h3>What you gain</h3><ul>
-    <li>The production model learns from production data, and dev never needs access to it.</li>
+    <li>The production model learns from production data, and dev never needs direct access to it.</li>
     <li>Automatic retraining is simple: it is just a scheduled job.</li>
     <li>The training code reaches production already tested in dev and QA.</li>
     <li>Everything comes from Git: reviewed, versioned and repeatable.</li>
@@ -159,7 +159,8 @@
 <p>This also makes moving a change forward very simple. To take code from dev to QA, you merge it from <code>develop</code> into <code>qa</code>. To take it to production, you merge it into <code>main</code>. Moving code between environments becomes the same thing as moving it between branches.</p>
 
 <h2 id="repository">One repository, and what each piece is for</h2>
-<p>Everything lives in a single repository. The layout is small, and each piece has one job.</p>
+<p>Everything lives in a single repository: the training code, the job definitions, the tests and the pipeline. That matters more than it seems. A change to the training code and a change to the job that runs it travel together, in the same pull request, and are reviewed together.</p>
+<p>The layout is small, and each piece has one job.</p>
 <pre><code>my-ml-project/
 ├─ <span class="k">databricks.yml</span>        <span class="c"># the central file: what is deployed, and where</span>
 ├─ <span class="k">resources/</span>jobs/*.yml   <span class="c"># Databricks jobs, defined as YAML</span>
@@ -251,7 +252,8 @@
 <p>One note on compute. To keep the example short, the job runs on an existing cluster. For scheduled jobs, a job cluster or serverless compute is usually the better choice: it only exists while the job runs, so you do not pay for a cluster that sits idle.</p>
 
 <h2 id="cicd">CI/CD: the pull request validates, the merge deploys</h2>
-<p>The CI/CD pipeline is one more YAML file in the repository. We used Azure DevOps, but the idea is the same in GitHub Actions or any other tool. It defines when the pipeline runs and what it does in each case.</p>
+<p>The bundle tells Databricks <em>what</em> to deploy. But someone still has to run the deploy command, at the right moment and for the right target. If that someone is a person, the old mistakes come back: the wrong target, a forgotten step, a deploy from a branch that was never reviewed.</p>
+<p>That is the job of the CI/CD pipeline. It is one more YAML file in the repository. We used Azure DevOps, but the idea is the same in GitHub Actions or any other tool. It defines when the pipeline runs and what it does in each case.</p>
 <span class="pre-label">cicd/pipeline.yml</span>
 <pre><code><span class="k">pr</span>:                <span class="c"># runs on pull requests to these branches</span>
   <span class="k">branches</span>: [develop, qa, main]
@@ -303,6 +305,7 @@
 <p>The result is that <strong>nobody deploys by hand to the shared environments</strong>. If the code is in <code>main</code>, it is in production. If it is not, it is not.</p>
 
 <h2 id="development">How we develop</h2>
+<p>There is one problem left. Before merging a change, you want to try it in Databricks, with real jobs and real data. But the dev workspace is shared: if everyone deployed over the same jobs, people would overwrite each other's work all day.</p>
 <p>Every change starts in its own branch, created from <code>develop</code>: a <code>feature/</code>, a <code>fix/</code> or a <code>bugfix/</code>. Before merging anything, you can deploy the whole bundle under your own name with the <code>personal</code> target.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 214" role="img" aria-labelledby="d4t">
 <title id="d4t">Development flow. A feature branch starts from develop. While working on it, the developer deploys a personal copy of the bundle to the dev workspace. When the change works, a pull request runs the tests and the branch is merged back into develop.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
@@ -318,11 +321,11 @@
 </svg></div><figcaption>Every change lives in its own branch and can be tested in Databricks before it is merged.</figcaption></figure>
 <pre><code>databricks bundle deploy -t personal    <span class="c"># deploy your own copy</span>
 databricks bundle destroy -t personal   <span class="c"># remove it when you finish</span></code></pre>
-<p>The <code>personal</code> target uses <code>mode: development</code>. That has three useful effects:</p>
+<p>The <code>personal</code> target uses <code>mode: development</code>, and you deploy it with your own user. Together, that gives you three useful things:</p>
 <ul>
-  <li>The files are deployed to your own user folder in the dev workspace, not to the shared one.</li>
-  <li>The jobs carry your user name as a prefix, so they do not replace the jobs of the team.</li>
-  <li>The schedules are paused. Your copy only runs when you start it.</li>
+  <li>Because you deploy it yourself, the files go to your own user folder in the dev workspace, not to the shared one.</li>
+  <li>Development mode adds your user name as a prefix to the jobs, so they do not replace the jobs of the team.</li>
+  <li>Development mode also pauses the schedules. Your copy only runs when you start it.</li>
 </ul>
 <figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://my-company-dev.cloud.databricks.com</div></div><div class="top"><span class="sq" style="background:var(--dev)"></span>my-company-dev<span class="search">Search data, notebooks, recents, and more…</span><span class="ws">workspace-dev ▾</span><span class="av" style="margin-left:0">YN</span></div>
 <div class="body"><div class="side"><div class="new">+ New</div><div>Workspace</div><div>Recents</div><div>Catalog</div><div class="on">Jobs &amp; Pipelines</div><div>Compute</div><div class="grp">SQL</div><div>SQL Editor</div><div>Dashboards</div><div class="grp">AI/ML</div><div>Experiments</div><div>Models</div><div>Serving</div></div><div class="main"><div class="hrow"><h4>Jobs &amp; Pipelines</h4><span class="mbtn">Create ▾</span></div><div class="tabs"><span class="on">Jobs &amp; pipelines</span><span>Runs</span></div>
@@ -352,7 +355,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 </svg></div><figcaption>The same code goes through the three environments, always through a pull request.</figcaption></figure>
 
 <h2 id="inside">What happens inside each environment</h2>
-<p>So far we have talked about how code moves. Now let's look at what that code does once it arrives. Once the bundle is deployed, each environment has a training job and an inference job. From here, the life of a model is the same everywhere:</p>
+<p>So far we have talked about how code moves. Now let's look at what that code does once it arrives. After the deployment, each environment has a training job and an inference job. From here, the life of a model is the same everywhere:</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 150" role="img" aria-labelledby="d6t">
 <title id="d6t">Inside one environment: the environment's data feeds a scheduled training job; each run is logged to MLflow; the model is registered as a new version in Unity Catalog; a version that passes the quality gate receives the champion alias; the inference job loads the champion.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
 <g class="node"><rect x="2" y="30" width="118" height="60" rx="6"/><text x="61" y="56">Data</text><text x="61" y="74" class="sub">of this environment</text></g>
@@ -371,7 +374,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
   <li>The <strong>inference job</strong> does not know about version numbers. It always loads the champion: <code>models:/&lt;catalog&gt;.&lt;schema&gt;.&lt;model&gt;@champion</code>.</li>
 </ol>
 <p>The alias deserves a closer look, because it solves a real problem.</p>
-<p>Every week, the training job creates a new model version: v30, then v31, then v32. If the inference job pointed to a fixed number, someone would have to change the code and deploy again every time a new version appeared. And if a new version turned out to be worse, nothing would stop it from being used.</p>
+<p>In production, the training job creates a new model version every week: v30, then v31, then v32. If the inference job pointed to a fixed number, someone would have to change the code and deploy again every time a new version appeared. And if a new version turned out to be worse, nothing would stop it from being used.</p>
 <p>An <strong>alias</strong> is a name that points to one version, and that you can move. The inference job only knows the name <code>champion</code>. It does not care which number is behind it.</p>
 <figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://my-company-prod.cloud.databricks.com</div></div><div class="top"><span class="sq" style="background:var(--prod)"></span>my-company-prod<span class="search">Search data, notebooks, recents, and more…</span><span class="ws">workspace-prod ▾</span><span class="av" style="margin-left:0">YN</span></div>
 <div class="body"><div class="side"><div class="new">+ New</div><div>Workspace</div><div>Recents</div><div class="on">Catalog</div><div>Jobs &amp; Pipelines</div><div>Compute</div><div class="grp">SQL</div><div>SQL Editor</div><div>Dashboards</div><div class="grp">AI/ML</div><div>Experiments</div><div>Models</div><div>Serving</div></div><div class="tree"><div>▾ prod_catalog</div><div style="padding-left:12px">▾ ml</div><div style="padding-left:24px">▸ Tables (12)</div><div style="padding-left:24px">▾ Models (1)</div><div class="on" style="margin-left:30px">◆ training_model</div><div style="padding-left:12px">▸ gold</div><div style="padding-left:12px">▸ silver</div></div>
@@ -413,7 +416,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 <text x="248" y="34" class="sub m">release/x.y.z · PR</text><text x="248" y="58" class="sub">tests + bundle validate</text>
 <text x="508" y="34" class="sub m">PR + version tag</text><text x="508" y="58" class="sub">tests + bundle validate</text>
 <path class="edge" d="M125 58V126" marker-end="url(#arrS)"/><text x="133" y="88" class="l sub">merge, then</text><text x="133" y="104" class="l sub m">deploy -t dev</text><g class="node dev"><rect x="10" y="128" width="230" height="350" rx="8"/></g><text x="125" y="154" class="h dev">DEV</text><text x="125" y="171" class="sub">development workspace</text><g class="node accent"><rect x="25" y="186" width="95" height="44" rx="6"/><text x="72" y="204">Code</text><text x="72" y="221" class="sub m">develop</text></g><g class="node"><rect x="130" y="186" width="95" height="44" rx="6"/><text x="177" y="204">Data</text><text x="177" y="221" class="sub m">dev_catalog</text></g><path class="edge" d="M72 230V252" marker-end="url(#arrS)"/><path class="edge" d="M177 230V252" marker-end="url(#arrS)"/><g class="node"><rect x="25" y="254" width="200" height="44" rx="6"/><text x="125" y="273">Training job</text><text x="125" y="289" class="sub">scheduled</text></g><path class="edge" d="M125 298V310" marker-end="url(#arrS)"/><g class="node"><rect x="25" y="312" width="200" height="44" rx="6"/><text x="125" y="331">MLflow</text><text x="125" y="347" class="sub">its own experiments</text></g><path class="edge" d="M125 356V368" marker-end="url(#arrS)"/><g class="node"><rect x="25" y="370" width="200" height="50" rx="6"/><text x="125" y="389">Model registry</text></g><g class="champ"><rect x="73" y="397" width="104" height="18" rx="4"/><text x="125" y="410" class="m">v12 @champion</text></g><path class="edge" d="M125 420V432" marker-end="url(#arrS)"/><g class="node"><rect x="25" y="434" width="200" height="36" rx="6"/><text x="125" y="453">Inference job</text></g><path class="edge" d="M380 58V126" marker-end="url(#arrS)"/><text x="388" y="88" class="l sub">merge, then</text><text x="388" y="104" class="l sub m">deploy -t qa</text><g class="node qa"><rect x="265" y="128" width="230" height="350" rx="8"/></g><text x="380" y="154" class="h qa">QA</text><text x="380" y="171" class="sub">validation workspace</text><g class="node accent"><rect x="280" y="186" width="95" height="44" rx="6"/><text x="327" y="204">Code</text><text x="327" y="221" class="sub m">qa</text></g><g class="node"><rect x="385" y="186" width="95" height="44" rx="6"/><text x="432" y="204">Data</text><text x="432" y="221" class="sub m">qa_catalog</text></g><path class="edge" d="M327 230V252" marker-end="url(#arrS)"/><path class="edge" d="M432 230V252" marker-end="url(#arrS)"/><g class="node"><rect x="280" y="254" width="200" height="44" rx="6"/><text x="380" y="273">Training job</text><text x="380" y="289" class="sub">scheduled</text></g><path class="edge" d="M380 298V310" marker-end="url(#arrS)"/><g class="node"><rect x="280" y="312" width="200" height="44" rx="6"/><text x="380" y="331">MLflow</text><text x="380" y="347" class="sub">its own experiments</text></g><path class="edge" d="M380 356V368" marker-end="url(#arrS)"/><g class="node"><rect x="280" y="370" width="200" height="50" rx="6"/><text x="380" y="389">Model registry</text></g><g class="champ"><rect x="328" y="397" width="104" height="18" rx="4"/><text x="380" y="410" class="m">v5 @champion</text></g><path class="edge" d="M380 420V432" marker-end="url(#arrS)"/><g class="node"><rect x="280" y="434" width="200" height="36" rx="6"/><text x="380" y="453">Inference job</text></g><path class="edge" d="M635 58V126" marker-end="url(#arrS)"/><text x="643" y="88" class="l sub">merge, then</text><text x="643" y="104" class="l sub m">deploy -t prod</text><g class="node prod"><rect x="520" y="128" width="230" height="350" rx="8"/></g><text x="635" y="154" class="h prod">PROD</text><text x="635" y="171" class="sub">production workspace</text><g class="node accent"><rect x="535" y="186" width="95" height="44" rx="6"/><text x="582" y="204">Code</text><text x="582" y="221" class="sub m">main</text></g><g class="node"><rect x="640" y="186" width="95" height="44" rx="6"/><text x="687" y="204">Data</text><text x="687" y="221" class="sub m">prod_catalog</text></g><path class="edge" d="M582 230V252" marker-end="url(#arrS)"/><path class="edge" d="M687 230V252" marker-end="url(#arrS)"/><g class="node"><rect x="535" y="254" width="200" height="44" rx="6"/><text x="635" y="273">Training job</text><text x="635" y="289" class="sub">scheduled</text></g><path class="edge" d="M635 298V310" marker-end="url(#arrS)"/><g class="node"><rect x="535" y="312" width="200" height="44" rx="6"/><text x="635" y="331">MLflow</text><text x="635" y="347" class="sub">its own experiments</text></g><path class="edge" d="M635 356V368" marker-end="url(#arrS)"/><g class="node"><rect x="535" y="370" width="200" height="50" rx="6"/><text x="635" y="389">Model registry</text></g><g class="champ"><rect x="583" y="397" width="104" height="18" rx="4"/><text x="635" y="410" class="m">v31 @champion</text></g><path class="edge" d="M635 420V432" marker-end="url(#arrS)"/><g class="node"><rect x="535" y="434" width="200" height="36" rx="6"/><text x="635" y="453">Inference job</text></g><text x="380" y="506" class="sub">Between environments, only the code moves. Data, experiments and models stay in the workspace where they were created.</text>
-</svg></div><figcaption>The whole architecture in one picture: Git decides what code each environment runs, the pipeline deploys it, and each workspace trains, tracks and serves its own model. Adapted and simplified from the MLOps workflow in the Databricks documentation.</figcaption></figure>
+</svg></div><figcaption>The whole architecture in one picture: Git decides what code each environment runs, the pipeline deploys it, and each workspace trains, tracks and uses its own model. Adapted and simplified from the MLOps workflow in the Databricks documentation.</figcaption></figure>
 
 
 <h2 id="takeaways">Six ideas to take away</h2>
