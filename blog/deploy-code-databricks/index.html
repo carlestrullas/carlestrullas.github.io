@@ -98,7 +98,8 @@
 <p>Imagine you have trained a model that forecasts weekly orders. It works well in the development workspace. Now it has to reach production. What exactly do you move there?</p>
 <p>There are two common answers to that question.</p>
 <p>The first is <strong>deploy model</strong>. You train the model once, in development, and then copy the trained model to QA and to production. It is simple, and the model you tested is exactly the model that runs.</p>
-<p>But that model learned from development data. Development data is usually a copy: older, smaller or less complete than the real data. So the model that runs in production has never seen production data.</p>
+<p>But this pattern has a condition. To train a good model in development, the development workspace has to read production data. In many companies that is not allowed, for security or privacy reasons.</p>
+<p>And there is a second problem: retraining. Every new model has to be trained in dev and then promoted again, which makes automatic weekly retraining hard.</p>
 <p>The second answer is <strong>deploy code</strong>. Instead of moving the model, you move the <em>code</em> that trains it. Each environment runs the same training code on its own data, and produces its own model.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 236" role="img" aria-labelledby="d1t">
 <title id="d1t">Two ways to ship a model. Deploy model: the model is trained in dev and the trained model is copied to QA and production. Deploy code: the code moves from dev to QA to production and each environment trains its own model.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
@@ -118,13 +119,15 @@
 <p>Deploy code is not a Databricks feature. It is a general way of working in MLOps, and you can apply it on any platform. This post shows how we applied it on Databricks.</p>
 
 <h3>Why we chose deploy code</h3>
-<p>Our model has to learn from the newest real data, and that data lives in production. With deploy code, the production model is trained in production, with production data. Training on production data only ever happens in production. No model trained on that data leaves the production workspace, and nobody has to copy a model file from one place to another.</p>
+<p>Our model has to learn from the newest real data, and that data lives in production. With deploy code, the production model is trained in production, with production data. The development workspace never needs access to production data, and no model trained on that data ever leaves the production workspace.</p>
+<p>Retraining also becomes simple. The training job runs on a schedule in production, so a new model appears every week without anyone training it by hand or copying a model file from one place to another.</p>
 <p>There is a second benefit, and it is easy to miss. With deploy code, the thing you test in dev and QA is the training code itself. By the time that code reaches production, it has already run successfully twice, in two different environments. If something is wrong with it, you usually find out before production does.</p>
-<div class="callout"><p>Deploy model is not a bad choice. If training takes days, or if a model must be approved once and then never change, it is often the better option. The right pattern depends on your project.</p></div>
+<div class="callout"><p>Deploy model is not a bad choice. If training takes days, if a model must be approved once and then never change, or if everything runs in a single workspace, it is often the better option. The right pattern depends on your project.</p></div>
 <p>In short, this is the trade-off:</p>
 <div class="two-col">
   <div><h3>What you gain</h3><ul>
-    <li>The production model learns from production data.</li>
+    <li>The production model learns from production data, and dev never needs access to it.</li>
+    <li>Automatic retraining is simple: it is just a scheduled job.</li>
     <li>The training code reaches production already tested in dev and QA.</li>
     <li>Everything comes from Git: reviewed, versioned and repeatable.</li>
     <li>Models trained on production data never leave production.</li>
