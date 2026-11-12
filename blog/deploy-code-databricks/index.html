@@ -409,7 +409,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
     <tr><td>PROD</td><td><code>main</code></td><td>MLflow in prod</td><td>v30, <strong>v31 @champion</strong></td></tr>
   </tbody>
 </table></div>
-<p>Version 12 in dev has nothing to do with version 31 in production. They were trained by the same code, but on different data and at different times. The production model was trained in production, with production data. Between environments, only the code moves.</p>
+<p>Version 12 in dev has nothing to do with version 31 in production. They were trained on different data, at different times, and often by different versions of the code: dev runs whatever is in <code>develop</code> today, while production runs the last release that reached <code>main</code>. The production model was trained in production, with production data. Between environments, only the code moves.</p>
 
 <h2 id="big-picture">The whole picture</h2>
 <p>We have looked at the pieces one by one. Here they are together. Read it from top to bottom: Git decides which code each environment runs, the pipeline deploys it, and inside each workspace the same chain repeats with its own data, its own MLflow and its own model.</p>
