@@ -78,7 +78,7 @@
         <ul class="tags" aria-label="Topics"><li>Databricks</li><li>MLOps</li><li>Automation Bundles</li><li>CI/CD</li><li>MLflow</li></ul>
       </header>
       <div class="prose">
-<p>Training a model is the easy part. The hard part starts the day it has to run every week, on real data, without anyone copying files by hand. Without a clear structure, the same problems always appear: models moved manually between environments, jobs created by clicking in the interface, "it worked in my environment", and nobody sure which version is running in production.</p>
+<p>Training a model is the easy part. The hard part starts the day it has to run again and again, on real data, without anyone copying files by hand. Without a clear structure, the same problems always appear: models moved manually between environments, jobs created by clicking in the interface, "it worked in my environment", and nobody sure which version is running in production.</p>
 <p>This post describes the architecture we used in a machine-learning project on Databricks. It is not about one specific model. It is about how to organise the repository, the environments and the deployment so that the path to production is reliable and repeatable.</p>
 
 <h2 id="setup">The setup this post assumes</h2>
@@ -120,7 +120,7 @@
 
 <h3>Why we chose deploy code</h3>
 <p>Our model has to learn from the newest real data, and that data lives in production. With deploy code, the production model is trained in production, with production data. The development workspace never needs direct access to production data, and no model trained on that data ever leaves the production workspace.</p>
-<p>Retraining also becomes simple. The training job runs on a schedule in production, so a new model appears every week without anyone training it by hand or copying a model file from one place to another.</p>
+<p>Retraining also becomes simple. The training job runs on a schedule in production, so a new model appears every time it runs, without anyone training it by hand or copying a model file from one place to another.</p>
 <p>There is one more benefit, and it is easy to miss. With deploy code, the thing you test in dev and QA is the training code itself. By the time that code reaches production, it has already run successfully twice, in two different environments. If something is wrong with it, you usually find out before production does.</p>
 <div class="callout"><p>Deploy model is not a bad choice. If training takes days, if a model must be approved once and then never change, or if everything runs in a single workspace, it is often the better option. The right pattern depends on your project.</p></div>
 <p>In short, this is the trade-off:</p>
@@ -382,7 +382,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
   <li>The <strong>inference job</strong> does not know about version numbers. It always loads the champion: <code>models:/&lt;catalog&gt;.&lt;schema&gt;.&lt;model&gt;@champion</code>.</li>
 </ol>
 <p>The alias deserves a closer look, because it solves a real problem.</p>
-<p>In production, the training job creates a new model version every week: v30, then v31, then v32. If the inference job pointed to a fixed number, someone would have to change the code and deploy again every time a new version appeared. And if a new version turned out to be worse, nothing would stop it from being used.</p>
+<p>In production, the training job creates a new model version every time it retrains: v30, then v31, then v32. If the inference job pointed to a fixed number, someone would have to change the code and deploy again every time a new version appeared. And if a new version turned out to be worse, nothing would stop it from being used.</p>
 <p>An <strong>alias</strong> is a name that points to one version, and that you can move. The inference job only knows the name <code>champion</code>. It does not care which number is behind it.</p>
 <figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://my-company-prod.cloud.databricks.com</div></div><div class="top"><span class="sq" style="background:var(--prod)"></span>my-company-prod<span class="search">Search data, notebooks, recents, and more…</span><span class="ws">workspace-prod ▾</span><span class="av" style="margin-left:0">CT</span></div>
 <div class="body"><div class="side"><div class="new">+ New</div><div>Workspace</div><div>Recents</div><div class="on">Catalog</div><div>Jobs &amp; Pipelines</div><div>Compute</div><div class="grp">SQL</div><div>SQL Editor</div><div>Dashboards</div><div class="grp">AI/ML</div><div>Experiments</div><div>Models</div><div>Serving</div></div><div class="tree"><div>▾ prod_catalog</div><div style="padding-left:12px">▾ ml</div><div style="padding-left:24px">▸ Tables (12)</div><div style="padding-left:24px">▾ Models (1)</div><div class="on" style="margin-left:30px">◆ training_model</div><div style="padding-left:12px">▸ gold</div><div style="padding-left:12px">▸ silver</div></div>
@@ -390,7 +390,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 <div class="tabs"><span class="on">Overview</span><span>Details</span><span>Permissions</span><span>Lineage</span></div>
 <div class="meta">Owner: sp-cicd-prod · Full name: <span class="mono">prod_catalog.ml.training_model</span></div>
 <table><thead><tr><th>Version</th><th>Time registered</th><th>Aliases</th><th>Tags</th><th>Created by</th></tr></thead><tbody><tr class="hl"><td class="lnk">Version 31</td><td>3 days ago</td><td><span class=chip>@champion</span></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 30</td><td>10 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 29</td><td>13 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 28</td><td>17 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr><tr class=""><td class="lnk">Version 27</td><td>24 days ago</td><td></td><td><span class="tag">validation: passed</span></td><td>sp-cicd-prod</td></tr></tbody></table></div></div></div>
-</div><figcaption>The registered model in production. A new version appears every week, but only one carries the <code>@champion</code> alias, and that is the one the inference job loads.</figcaption></figure>
+</div><figcaption>The registered model in production. A new version appears every time the model is retrained, but only one carries the <code>@champion</code> alias, and that is the one the inference job loads.</figcaption></figure>
 
 <ul>
   <li>If the new version passes the quality check, the alias moves to it, and the next inference run uses it.</li>
