@@ -79,7 +79,7 @@
       </header>
       <div class="prose">
 <p>Training a model is the easy part. The hard part starts the day it has to run again and again, on real data, without anyone copying files by hand. Without a clear structure, the same problems always appear: models moved manually between environments, jobs created by clicking in the interface, "it worked in my environment", and nobody sure which version is running in production.</p>
-<p>This post describes the architecture we used in a machine-learning project on Databricks. It is not about one specific model. It is about how to organise the repository, the environments and the deployment so that the path to production is reliable and repeatable.</p>
+<p>This post describes the architecture we used in a machine-learning project on Databricks. I will not go into the model itself. The post is about how we organised the repository, the environments and the deployment, so that getting to production was reliable and repeatable.</p>
 
 <h2 id="setup">The setup this post assumes</h2>
 <p>Before anything else, it helps to be clear about the starting point. Everything in this post assumes that you work with <strong>three separate Databricks environments</strong>: development, QA and production. Each one is its own workspace, and <strong>each one has its own data</strong>.</p>
@@ -121,9 +121,9 @@
 <h3>Why we chose deploy code</h3>
 <p>Our model has to learn from the newest real data, and that data lives in production. With deploy code, the production model is trained in production, with production data. The development workspace never needs direct access to production data, and no model trained on that data ever leaves the production workspace.</p>
 <p>Retraining also becomes simple. The training job runs on a schedule in production, so a new model appears every time it runs, without anyone training it by hand or copying a model file from one place to another.</p>
-<p>There is one more benefit, and it is easy to miss. With deploy code, the thing you test in dev and QA is the training code itself. By the time that code reaches production, it has already run successfully twice, in two different environments. If something is wrong with it, you usually find out before production does.</p>
+<p>Another benefit has to do with testing. With deploy code, the thing you test in dev and QA is the training code itself. By the time that code reaches production, it has already run successfully twice, in two different environments. If something is wrong with it, you usually find out before production does.</p>
 <div class="callout"><p>Deploy model is not a bad choice. If training takes days, if a model must be approved once and then never change, or if everything runs in a single workspace, it is often the better option. The right pattern depends on your project.</p></div>
-<p>In short, this is the trade-off:</p>
+<p>To sum up the trade-off:</p>
 <div class="two-col">
   <div><h3>What you gain</h3><ul>
     <li>The production model learns from production data, and dev never needs direct access to it.</li>
@@ -141,7 +141,7 @@
 <h2 id="environments">Three environments, three branches</h2>
 <p>If the code is what moves between environments, we need a clear answer to a simple question: which version of the code runs where?</p>
 <p>Without a rule, this gets messy fast. Someone deploys a half-finished change to QA to test it. Production runs a version that nobody can find in Git. Two people overwrite each other's work in the same workspace.</p>
-<p>Our rule removes that doubt: <strong>each workspace runs the code of one Git branch</strong>. Dev runs <code>develop</code>, QA runs <code>qa</code> and production runs <code>main</code>. If you want to know what is running in production, you look at <code>main</code>. Nothing else.</p>
+<p>Our rule was simple: <strong>each workspace runs the code of one Git branch</strong>. Dev runs <code>develop</code>, QA runs <code>qa</code> and production runs <code>main</code>. If you want to know what is running in production, you look at <code>main</code>.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 216" role="img" aria-labelledby="d2t">
 <title id="d2t">Three Databricks workspaces. Dev runs the code of the develop branch, QA runs the qa branch and production runs the main branch. Each workspace has its own data, jobs, MLflow and models.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
 <g class="pill dev"><rect x="50" y="4" width="140" height="30" rx="15" class="dev"/><text x="120" y="24" class="m dev">develop</text></g>
@@ -159,7 +159,7 @@
 <p>This also makes moving a change forward very simple. To take code from dev to QA, you merge it from <code>develop</code> into <code>qa</code>. To take it to production, you merge it into <code>main</code>. Moving code between environments becomes the same thing as moving it between branches.</p>
 
 <h2 id="repository">One repository, and what each piece is for</h2>
-<p>Everything lives in a single repository: the training code, the job definitions, the tests and the pipeline. That matters more than it seems. A change to the training code and a change to the job that runs it travel together, in the same pull request, and are reviewed together.</p>
+<p>Everything lives in a single repository: the training code, the job definitions, the tests and the pipeline. This way, a change to the training code and a change to the job that runs it go in the same pull request and are reviewed together.</p>
 <p>The layout is small, and each piece has one job.</p>
 <pre><code>my-ml-project/
 ├─ <span class="k">databricks.yml</span>        <span class="c"># the central file: what is deployed, and where</span>
@@ -351,7 +351,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
   <li>If QA approves it, a second pull request takes the <em>same</em> release into <code>main</code>. The pipeline deploys it to production and creates a version tag in Git, such as <code>v1.4.0</code>.</li>
 </ol>
 <p>If QA finds a problem, the fix goes into the release branch itself, not into <code>develop</code>. And once the release reaches <code>main</code>, it is merged back into <code>develop</code>, so those fixes are not lost in the next release.</p>
-<p>The tag is a small detail with a big benefit. Months later, if someone asks which code trained the production model, the answer is one Git tag away.</p>
+<p>The tag is also useful later on. If, months after, someone asks which code trained the production model, you can find it from the tag.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 96" role="img" aria-labelledby="d5t">
 <title id="d5t">Promotion flow: develop is deployed to dev; a release branch is cut from develop and merged into qa, which deploys to QA; after validation the same release is merged into main, which deploys to production and creates a version tag.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
 <g class="node dev"><rect x="2" y="18" width="150" height="60" rx="6"/><text x="77" y="44" class="m">develop</text><text x="77" y="62" class="sub">deployed to DEV</text></g>
@@ -363,7 +363,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 </svg></div><figcaption>The same code goes through the three environments, always through a pull request.</figcaption></figure>
 
 <h2 id="inside">What happens inside each environment</h2>
-<p>So far we have talked about how code moves. Now let's look at what that code does once it arrives. After the deployment, each environment has a training job and an inference job. From here, the life of a model is the same everywhere:</p>
+<p>Up to here, the post has been about how the code moves. This section is about what the code does once it is deployed. After the deployment, each environment has a training job and an inference job. From here, the life of a model is the same everywhere:</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 150" role="img" aria-labelledby="d6t">
 <title id="d6t">Inside one environment: the environment's data feeds a scheduled training job; each run is logged to MLflow; the model is registered as a new version in Unity Catalog; a version that passes the quality gate receives the champion alias; the inference job loads the champion.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
 <g class="node"><rect x="2" y="30" width="118" height="60" rx="6"/><text x="61" y="56">Data</text><text x="61" y="74" class="sub">of this environment</text></g>
@@ -381,7 +381,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
   <li>If the new version passes a quality check, it receives the alias <code>champion</code>. The check can be a minimum score, or, more often, being at least as good as the current champion.</li>
   <li>The <strong>inference job</strong> does not know about version numbers. It always loads the champion: <code>models:/&lt;catalog&gt;.&lt;schema&gt;.&lt;model&gt;@champion</code>.</li>
 </ol>
-<p>The alias deserves a closer look, because it solves a real problem.</p>
+<p>Why use an alias instead of a version number?</p>
 <p>In production, the training job creates a new model version every time it retrains: v30, then v31, then v32. If the inference job pointed to a fixed number, someone would have to change the code and deploy again every time a new version appeared. And if a new version turned out to be worse, nothing would stop it from being used.</p>
 <p>An <strong>alias</strong> is a name that points to one version, and that you can move. The inference job only knows the name <code>champion</code>. It does not care which number is behind it.</p>
 <figure class="mock-fig"><span class="mock-label">Illustrative recreation of the interface</span><div class="mock-scroll"><div class="mock wide"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">https://my-company-prod.cloud.databricks.com</div></div><div class="top"><span class="sq" style="background:var(--prod)"></span>my-company-prod<span class="search">Search data, notebooks, recents, and more…</span><span class="ws">workspace-prod ▾</span><span class="av" style="margin-left:0">CT</span></div>
@@ -412,7 +412,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
 <p>Version 12 in dev has nothing to do with version 31 in production. They were trained on different data, at different times, and often by different versions of the code: dev runs whatever is in <code>develop</code> today, while production runs the last release that reached <code>main</code>. The production model was trained in production, with production data. Between environments, only the code moves.</p>
 
 <h2 id="big-picture">The whole picture</h2>
-<p>We have looked at the pieces one by one. Here they are together. Read it from top to bottom: Git decides which code each environment runs, the pipeline deploys it, and inside each workspace the same chain repeats with its own data, its own MLflow and its own model.</p>
+<p>We have looked at the pieces one by one. This diagram puts them together. From top to bottom: Git decides which code each environment runs, the pipeline deploys it, and inside each workspace the same chain repeats with its own data, its own MLflow and its own model.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 520" role="img" aria-labelledby="d7t">
 <title id="d7t">The whole architecture in one picture. In Git, develop goes to qa through a release branch and a pull request, and qa goes to main through a second pull request; every pull request runs tests and bundle validate. A merge to each branch deploys the bundle to its workspace: develop to dev, qa to QA and main to production. Inside each workspace, the deployed code and the environment's own data feed a scheduled training job, which logs to its own MLflow and registers a new version in its own model registry; the champion version is loaded by the inference job. Between environments, only the code moves.</title>
 <defs><marker id="arrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
@@ -436,7 +436,7 @@ databricks bundle destroy -t personal   <span class="c"># remove it when you fin
   <li>Each environment trains and versions its own model.</li>
   <li>Develop in your own branch, with a personal deployment.</li>
 </ol>
-<p>None of these pieces is complicated on its own. The value is in how they fit together: once the structure exists, taking a change to production is opening a pull request.</p>
+<p>None of these pieces is new or complicated. What made the difference for us was using them together: once the structure was in place, taking a change to production was just a matter of opening a pull request.</p>
 </div>
       <section class="comments" aria-labelledby="comments-title">
         <h2 id="comments-title">Comments</h2>
