@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Deploy code ML architecture on Databricks · Carles Trullàs</title>
-  <meta name="description" content="How to structure a machine-learning project on Databricks with one repository, three environments, Asset Bundles, CI/CD and versioned models.">
+  <meta name="description" content="How to structure a machine-learning project on Databricks with one repository, three environments, Declarative Automation Bundles, CI/CD and versioned models.">
   <meta name="author" content="Carles Trullàs">
   <link rel="canonical" href="https://carlestrullas.github.io/blog/deploy-code-databricks/">
 
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://carlestrullas.github.io/blog/deploy-code-databricks/">
   <meta property="og:title" content="Deploy code ML architecture on Databricks · Carles Trullàs">
-  <meta property="og:description" content="How to structure a machine-learning project on Databricks with one repository, three environments, Asset Bundles, CI/CD and versioned models.">
+  <meta property="og:description" content="How to structure a machine-learning project on Databricks with one repository, three environments, Declarative Automation Bundles, CI/CD and versioned models.">
   <meta property="og:image" content="https://carlestrullas.github.io/images/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
 
@@ -35,7 +35,7 @@
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "Deploy code ML architecture on Databricks",
-    "description": "How to structure a machine-learning project on Databricks with one repository, three environments, Asset Bundles, CI/CD and versioned models.",
+    "description": "How to structure a machine-learning project on Databricks with one repository, three environments, Declarative Automation Bundles, CI/CD and versioned models.",
     "datePublished": "2026-11-11",
     "dateModified": "2026-11-12",
     "author": { "@type": "Person", "name": "Carles Trullàs", "url": "https://carlestrullas.github.io/" }
@@ -75,7 +75,7 @@
         <p class="post-date"><time datetime="2026-11-11">11 November 2026</time> · 14 min read</p>
         <h1>Deploy code ML architecture on Databricks</h1>
         <p class="standfirst">One repository, three environments, and a pipeline where a pull request validates and a merge deploys. This is how I structure a machine-learning project on Databricks so that it reaches production in a reliable, repeatable way.</p>
-        <ul class="tags" aria-label="Topics"><li>Databricks</li><li>MLOps</li><li>Asset Bundles</li><li>CI/CD</li><li>MLflow</li></ul>
+        <ul class="tags" aria-label="Topics"><li>Databricks</li><li>MLOps</li><li>Automation Bundles</li><li>CI/CD</li><li>MLflow</li></ul>
       </header>
       <div class="prose">
 <p>Training a model is the easy part. The hard part starts the day it has to run every week, on real data, without anyone copying files by hand. Without a clear structure, the same problems always appear: models moved manually between environments, jobs created by clicking in the interface, "it worked in my environment", and nobody sure which version is running in production.</p>
@@ -99,7 +99,7 @@
 <p>There are two common answers to that question.</p>
 <p>The first is <strong>deploy model</strong>. You train the model once, in development, and then copy the trained model to QA and to production. It is simple, and the model you tested is exactly the model that runs.</p>
 <p>But this pattern has a condition. To train a good model in development, the development workspace has to read production data. In many companies that is not allowed, for security or privacy reasons.</p>
-<p>And there is a second problem: retraining. Every new model has to be trained in dev and then promoted again, which makes automatic weekly retraining hard.</p>
+<p>And there is a second problem: retraining. Every new model has to be trained in dev and then promoted again, which makes automatic periodic retraining hard.</p>
 <p>The second answer is <strong>deploy code</strong>. Instead of moving the model, you move the <em>code</em> that trains it. Each environment runs the same training code on its own data, and produces its own model.</p>
 <figure><div class="flow-scroll"><svg class="flow" viewBox="0 0 760 236" role="img" aria-labelledby="d1t">
 <title id="d1t">Two ways to ship a model. Deploy model: the model is trained in dev and the trained model is copied to QA and production. Deploy code: the code moves from dev to QA to production and each environment trains its own model.</title><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
@@ -172,7 +172,7 @@
 <h2 id="bundle">databricks.yml: what is deployed, and where</h2>
 <p>Now think about what a deployment to one workspace actually involves. You need to upload the training and inference code. You need to create the jobs that run it, with the right cluster and the right schedule. And all of that must point to the data of that environment, not another one.</p>
 <p>Doing this by hand, three times, for every change, is slow and easy to get wrong. One wrong click and the QA job reads production data, or production runs an old notebook.</p>
-<p>This is the problem that <a href="https://docs.databricks.com/dev-tools/bundles/">Databricks Asset Bundles</a> solve (the documentation now calls them Declarative Automation Bundles). A bundle packages your code and your job definitions as <strong>one unit that you can deploy</strong>. You describe once what must exist, and the bundle creates it in whichever workspace you choose.</p>
+<p>This is the problem that <a href="https://docs.databricks.com/dev-tools/bundles/">Declarative Automation Bundles</a> solve. A bundle packages your code and your job definitions as <strong>one unit that you can deploy</strong>. You describe once what must exist, and the bundle creates it in whichever workspace you choose.</p>
 <p>The file <code>databricks.yml</code> is the entry point of the bundle. A simplified version looks like this:</p>
 <span class="pre-label">databricks.yml</span>
 <pre><code><span class="k">bundle</span>:
@@ -206,6 +206,7 @@
   <li><strong>The variables</strong>: everything that changes from one environment to another, such as the cluster, the data catalog or the schedule.</li>
   <li><strong>The targets</strong>: one destination per environment. A target can override variables. In this example, dev and QA retrain once a month, which is enough to check that the code works. Production overrides the schedule and retrains every Monday, because that is where fresh data matters.</li>
 </ul>
+<div class="callout"><p>You may have noticed a fourth target, <code>personal</code>. It is not an environment like the other three: it lets each developer deploy their own copy to test a change before merging it. We will come back to it in <a href="#development">How we develop</a>.</p></div>
 <p>The same bundle is deployed to any target with a single command:</p>
 <pre><code>databricks bundle deploy -t &lt;target&gt;</code></pre>
 <p>Notice that the variables have no values for the cluster or the catalog. The real hosts, cluster IDs and catalog names are not in this file. The pipeline passes them in at deployment time, so the repository holds no environment-specific values and no credentials.</p>
